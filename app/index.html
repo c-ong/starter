@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Untitled</title>
+    <script type="text/javascript" charset="utf-8"
+            src="libs/zepto/zepto.js?1.1.6"></script>
+    <script type="text/javascript" charset="utf-8"
+            src="libs/zepto/fx.js?1.1.6"></script>
+
+    <script type="text/javascript" charset="utf-8"
+            src="libs/mdl/material.js?1.0.5"></script>
+    <link rel="stylesheet" href="libs/mdl/material.css?1.0.5">
+
+
+    <link rel="stylesheet" href="styles/base.css">
+    <script type="text/javascript" charset="utf-8"
+            src="scripts/base.js"></script>
+
+
+</head>
+<body>
+<div id="lairen-viewport">
+
+    <div id="lairen-dialog" style="display: none;">
+
+        <div id="dialog-mask" style="display: none;">
+        </div>
+
+    </div>
+
+    <div id="lairen-fragments">
+        <div class="lairen-layout--fragment"
+             style="background-image: url('http://bj.lairen.com/v2/images/glass_bg_top.jpg')">
+            <!--             -->
+            <div>Say Hello</div>
+            <button onclick="alert()">Touch me</button>
+
+
+            <button onclick="x.show()">Show dialog</button>
+            <button onclick="x.cancel()">Cancel dialog</button>
+            <button onclick="x.dismiss()">Dismiss dialog</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    var x = lairen.dialog('<div onclick="lairen.dialog().show()" style="border: 1px solid red; padding: 10px;">点我再打开一个 Dialog</div>');
+</script>
+</body>
+</html>
