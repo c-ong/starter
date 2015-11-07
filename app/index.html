@@ -24,30 +24,100 @@
 <div id="lairen-viewport">
 
     <div id="lairen-dialog" style="display: none;">
-
         <div id="dialog-mask" style="display: none;">
         </div>
-
     </div>
 
     <div id="lairen-fragments">
-        <div class="lairen-layout--fragment"
-             style="background-image: url('http://bj.lairen.com/v2/images/glass_bg_top.jpg')">
-            <!--             -->
-            <div>Say Hello</div>
-            <button onclick="alert()">Touch me</button>
-
-
-            <button onclick="x.show()">Show dialog</button>
-            <button onclick="x.cancel()">Cancel dialog</button>
-            <button onclick="x.dismiss()">Dismiss dialog</button>
-        </div>
     </div>
 
 </div>
 
 <script>
     var x = lairen.dialog('<div onclick="lairen.dialog().show()" style="border: 1px solid red; padding: 10px;">点我再打开一个 Dialog</div>');
+
+    // ------------------------------------------------------------------------
+    var config = {
+        args: { key: 'value' },
+
+        // 可以通过该字段来指定默认内容也可以调用 render 方法来填充内容
+        html:
+        '<div id="starter"><div style="padding: 16px 0;">Dialog & View Switcher 使用演示</div>' +
+
+        '<button onclick="$fragment.go(\'view.about\')">加载并呈现 About UI ->></button>' +
+
+        '<button onclick="alert()">系统 Dialog</button>' +
+
+        '<button onclick="x.show()">Show dialog</button>' +
+        '<button onclick="x.cancel()">Cancel dialog</button>' +
+        '<button onclick="x.dismiss()">Dismiss dialog</button></div>',
+
+        onStart: function() {
+            console.log( 'onStart' )
+        },
+
+        onResume: function(){
+            console.log( 'onResume' )
+        }
+    };
+    // 定义一个 fragment
+    var home = $fragment.define( 'view.home', config );
+
+    // ------------------------------------------------------------------------
+
+    $fragment.define( 'view.about',
+        {
+            args: { key: 'value' },
+
+            // 可以通过该字段来指定默认内容也可以调用 render 方法来填充内容
+            html: '<div id="starter"><div style="padding: 16px 0;">View 后退使用演示</div>' +
+
+            '<button onclick="$fragment.back()">后退 <<-</button>' +
+            '<button onclick="$fragment.go(\'login\')">加载并呈现 Login UI ->></button></div>',
+
+            onStart: function() {
+                console.log( 'onStart' )
+            },
+
+            onResume: function(){
+                console.log( 'onResume' )
+            }
+        } );
+
+    // ------------------------------------------------------------------------
+
+    var config_login = {
+        onCreateView: function() {
+            var fragment = this;
+
+            // 加载 HTML 片段并呈现
+            var x = lairen.get(
+                'http://192.168.3.202/pull/login',
+                function(response)
+                {
+                    fragment.render({html: response});
+                },
+                    function() {
+                        console.dir( arguments )
+                    }
+            );
+        },
+
+        onStart: function() {
+            console.log( 'onStart' )
+        },
+
+        onResume: function(){
+            console.log( 'onResume' )
+        }
+    };
+    // 定义一个 fragment
+    var login = $fragment.define( 'login', config_login );
+
+    // ------------------------------------------------------------------------
+
+    // 设置默认界面
+    $fragment.beginWith( 'view.home' );
 </script>
 </body>
 </html>

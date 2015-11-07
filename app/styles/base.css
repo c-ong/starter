@@ -1,3 +1,26 @@
+/* Used for the first fragment */
+#starter {
+    background-color: #f2f2f2;
+    /*background-color: #fafafa;*/
+    color: #FF3D00;
+    width: 100%;
+    height: 100%;
+    padding: 16px;
+}
+
+#starter button {
+    width: 90%;
+    font-size: 18px;
+    min-height: 50px;
+    border-radius: 2px;
+    border: none;
+    color: inherit;
+    box-shadow: 1px 2px 5px rgba(0, 0, 0, .1);
+    background-color: white;
+    margin-top: 16px;
+}
+
+/*------------------------------------------------*/
 
 #lairen-viewport {
     position: fixed;
@@ -14,13 +37,22 @@
     height: 100%;
 }
 
+.lairen-layout--fragment {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: white;
+}
+
 #lairen-dialog {
     position: fixed;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba( 0,0,0,0.2 );
+    background-color: rgba( 0, 0, 0, 0.2 );
 }
 
 #dialog-mask {
@@ -29,16 +61,40 @@
     width: 100%;
     height: 100%;
     position: absolute;
+    /*background-color: rgba(255, 255, 255, .6);*/
     background-color: rgba(0, 0, 0, .4);
 }
+/*------------------------------------------------------*/
+@-webkit-keyframes fragment-enter {
+    from { transform: translateX(100%)/*; opacity: .1*/ }
+    to { transform: translateX(0)/*; opacity: 1*/ }
+}
+@-webkit-keyframes fragment-pop-exit {
+    from { transform: translateX(0)/*; opacity: .8*/ }
+    to { transform: translateX(-20%)/*; opacity: 1*/ }
+}
+@-webkit-keyframes fragment-pop-enter {
+    from { transform: translateX(-20%)/*; opacity: 1*/ }
+    to { transform: translateX(0)/*; opacity: .8*/ }
+}
+@-webkit-keyframes fragment-exit {
+    from { transform: translateX(0)/*; opacity: 1*/ }
+    to { transform: translateX(100%)/*; opacity: .8*/ }
+}
+
 @-webkit-keyframes dialog-mask-in {
     from { background-color: rgba(0, 0, 0, .0) }
+    /*to { background-color: rgba(255, 255, 255, 0) }*/
     to { background-color: rgba(0, 0, 0, .4) }
+    /*to { background-color: rgba(255, 255, 255, .4) }*/
 }
 @-webkit-keyframes dialog-mask-out {
     from { background-color: rgba(0, 0, 0, .4) }
+    /*to { background-color: rgba(255, 255, 255, .4) }*/
+    /*to { background-color: rgba(255, 255, 255, 0) }*/
     to { background-color: rgba(0, 0, 0, .0) }
 }
+/*------------------------------------------------------*/
 
 #dialog-stack {
     position: fixed;
@@ -54,11 +110,11 @@
     /*top: 50%;*/
     margin-left: auto;
     margin-right: auto;
-    min-width: 60%;
-    min-height: 30%;
-    max-width: 80%;
-    max-height: 30%;
+    min-width: 86%;
+    min-height: 34%;
+    max-width: 86%;
+    max-height: 34%;
     /*margin-top: -45%;*/
     border-radius: 4px;
-    box-shadow: 0px 15px 25px 0px rgba(0, 0, 0, 0.5);
+    box-shadow: 0px 15px 25px 0px rgba(0, 0, 0, 0.2);
 }
