@@ -6,6 +6,8 @@
 ;!function() {
     "use strict";
 
+    var VERSION = '0.0.2';
+
     var win     = window;
     var emptyFn = function() {};
 
@@ -471,8 +473,9 @@
      * @type {string}
      * @private
      */
-    var _HASH = 'hash',
-        _ARGS = 'args';
+    var _HASH   = 'hash',
+        _ARGS   = 'args',
+        _TITLE  = 'title';
 
     /**
      * 一个 fragment 从定义到销毁将会执行以下这些过程.
@@ -581,6 +584,7 @@
     }
 
     function resume(fragment) {
+        fragment[ _TITLE ] && _triggerUpdateTitle( fragment.title );
         _invokeHandler( fragment, resume )
     }
 
@@ -629,6 +633,30 @@
                 || ( 'url' in data && _renderWithUrl.call( this, data ) ) )
     }
 
+    /**
+     * 设置当前 title.
+     * @param title
+     */
+    function setTitle(title) {
+        document.title = title;
+    }
+
+    /**
+     * 当前 fragment 是否可见.
+     * @returns {*}
+     */
+    function isVisible() {
+        return this._el_.layout && isShowing( this._el_.layout )
+    }
+
+    function getArgs() {
+        return this[ _ARGS ]
+    }
+
+    function _triggerUpdateTitle(title) {
+        setTitle( title )
+    }
+
     function _isInBackStack() {
 
     }
@@ -671,8 +699,10 @@
         location.hash = x.join( '' );
     }
 
-    function _go(id) {
-        _exist( id ) && _performGo.call( getFragment( id ) )
+    function _go(id, args) {
+        _exist( id )
+            && ( args && _overrideArgs(id, args),
+                _performGo.call( getFragment( id ) ) )
     }
 
     function _performGo() {
@@ -693,10 +723,10 @@
 
         // onVisibilityChanged
         // 是否被暂停
-        var paused = isShowing( layout );
+        var paused = ! isShowing( layout );
 
-        // 恢复
-        paused && resume( target );
+        // FIXME(XCL): 不管是否被暂停这里绝对执行恢复操作
+        /*paused && */resume( target );
 
         // 隐藏当前 fragment
         current && _hide( current, 1 );
@@ -811,17 +841,6 @@
 
     // ------------------------------------------------------------------------
 
-    /**
-     * 从集合中取 fragment 根据指定的 id, 如: about.
-     * @param id
-     * @returns {*}
-     */
-    function getFragment(id) {
-        return _fragments[ id ]
-    }
-
-    // ------------------------------------------------------------------------
-
     function pause(fragment) {
         _invokeHandler( fragment, pause )
     }
@@ -843,6 +862,15 @@
     }
 
     // ------------------------------------------------------------------------
+
+    /**
+     * 从集合中取 fragment 根据指定的 id, 如: about.
+     * @param id
+     * @returns {*}
+     */
+    function getFragment(id) {
+        return _fragments[ id ]
+    }
 
     function _resolveRequires(requires) {
         // TODO:
@@ -882,6 +910,7 @@
         if ( ! isString( id ) )
             throw Error( "Invalid id(" + id + ")" );
 
+        // TODO: 延迟初始化
         _ensure();
 
         // 标识是否需要填充默认 fragment
@@ -908,16 +937,25 @@
         // --------------------------------------------------------------------
 
         layout = _FRAGMENT_TEMPLATE.clone();
+
         // 填充 HTML 片段，如果已指定该字段
         (config && 'html' in config)
             && isString( config.html )
                 && layout.html( config.html );
 
         // --------------------------------------------------------------------
+        // 对一个 fragment 开放的实例方法
         var methods = [
-            [ 'render',         render  ],
-            [ 'canBack',        canBack ],
-            [ 'back',           back    ]
+            // 填充内空
+            [ 'render',     render ],
+            [ 'setTitle',   setTitle ],
+
+            // 判别是否可见
+            [ 'isVisible',  isVisible ],
+            // 获取参数对儿
+            [ 'getArgs',    getArgs ]
+            //[ 'canBack',      canBack ],
+            //[ 'back',         back    ]
         ];
 
         // 开放的方法
@@ -935,7 +973,13 @@
 
         fragment.id             = id;
         fragment.stackIdx       = stackId;
+        // DOM 节点
         fragment._el_           = { layout: layout };
+
+        // 标题
+        fragment[ _TITLE ] = isString( config[ _TITLE ] )
+            ? config[ _TITLE ]
+            : document.title;
 
         // 解析后的 hash, lairen.ui.home -> lairen/ui/home
         fragment[ _HASH ]       = _makeIdUrlify( id );
@@ -943,18 +987,17 @@
         // To retain the arguments if present.
         _ARGS in config && (fragment[ _ARGS ] = config[ _ARGS ]);
 
+        //console.log( JSON.stringify( config ) );
+        //console.log( id + " " + JSON.stringify( fragment[ _ARGS ] ) );
+
         try {
-            //console.log( "Step A: " + id + " hash: " + location.hash );
             return fragment
         } finally {
-            //console.log( "Step B: " + id + " hash: " + location.hash );
-
             // 将定义的 fragment 放入容器
             _add( fragment );
 
+            // 呈现默认 View 如果没有有效的 view id 被指定
             ! hasTop && _setupTop( fragment );
-
-            //console.log( "Step C: " + id + " hash: " + location.hash );
         }
     }
 
@@ -1003,8 +1046,12 @@
         return /\/+/g.test( hash ) ? ( hash.replace( /\//g, '.' ) ) : hash
     }
 
-    function _overrideArgs() {
+    function _overrideArgs(id, args) {
         // TODO:
+        var x = getFragment( id );
+        console.dir( args );
+        x && (x[ _ARGS ] = args)
+        console.dir( getFragment( id ) );
     }
 
     /**
@@ -1169,9 +1216,10 @@
     win.$fragment = {
         /**
          * 初始化一个 Fragment 并以指定的 ID 来标识。
-         * e.g: package.views.Home
-         *      package.views.Help
-         *      package.views.About
+         *
+         * e.g: package.views.home
+         *      package.views.help
+         *      package.views.about
          *
          *      config {
          *           backable: false,
@@ -1181,48 +1229,53 @@
          *
          * @param id
          * @param config
-         * @returns {*}
+         * @returns {object} 一个 fragment 实例
          */
-        define: $lr.fragment,
+        define:     $lr.fragment,
 
         /**
          * 构建并呈现 fragment 如果当前不含有效的 hash 则使用指定的作为初始 fragment.
          * @param id
          */
-        beginWith: function(id) {
+        beginWith:  function(id) {
             _ORIGIN_HASH || _go( id )
         },
 
         /**
          * 呈现指定的 fragment, 如: about.
          * @param id
+         * @param args
          */
-        go: _go,
+        go:         _go,
 
         /**
          * 判断是否有上一个 fragment, 如果有则可以执行返回操作.
          */
-        canBack: canBack,
+        canBack:    canBack,
 
         /**
          * 请求进行后退操作, 如果 BackStack 有可用的记录.
          */
-        back: back,
+        back:       back,
 
         /**
          * 可以向 fragment 传递一些参数用来更新.
          * @param id
          * @param params
          */
-        update: function(id, params) {
+        update:     function(id, params) {
             // TODO:
+        },
+
+        reload:     function(id, params) {
+
         },
 
         /**
          * 回收一个 fragment.
          * @param id
          */
-        destroy: function(id) {
+        destroy:    function(id) {
             // TODO:
         }
     };
@@ -1230,6 +1283,8 @@
     // ------------------------------------------------------------------------
 
     // TODO:
+    // clearContentOnLeave
+    // destroyOnLeave
     // open fragment
     // show fragment
     // reveal fragment
@@ -1250,11 +1305,16 @@
     var _ORIGIN_HASH = _isViewHash( location.hash )
         ? _resolveHash( location.hash ) : null;
 
+    /**
+     * 当 hash 变更时调用该 fn.
+     * @private
+     */
     var _onHashChanged = function() {
         var oldHash = _current
             && { hash: _current[ _HASH ], args: _current[ _ARGS ] }
             || null;
 
+        // 是否为 page hash
         _isViewHash( location.hash )
             && _handleHashChange( oldHash, _resolveHash( location.hash ) );
     };
@@ -1265,11 +1325,14 @@
             JSON.stringify( newHash ) + ' ' + new Date().getTime() );
 
         ! _isSameHash( oldHash, newHash )
-            && _triggerLoadFragment( _makeIdentify( newHash[ _HASH ] ) )
+            && _triggerLoadFragment( newHash )
     };
 
     // triggerBackward
-    var _triggerLoadFragment = function(id, fromUser) {
+    var _triggerLoadFragment = function(hash, fromUser) {
+        var id = _makeIdentify( hash[ _HASH ] );
+
+        _overrideArgs( id, hash[ _ARGS ] );
         _go( id )
     };
 
@@ -1278,8 +1341,12 @@
         _onHashChanged);
 
     // FIXME(XCL): Trying to prevent the user backward operation
-    history.pushState( null, null, location.href );
-    window.addEventListener( 'popstate', function(event) {
+    if ( 'onpopstate' in window ) {
         history.pushState( null, null, location.href );
-    } );
+
+        window.addEventListener( 'popstate', function (event) {
+            // To override the history state
+            history.pushState( null, null, location.href );
+        } );
+    }
 }(lairen);
