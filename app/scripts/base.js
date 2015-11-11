@@ -6,13 +6,15 @@
 ;!function() {
     "use strict";
 
-    var VERSION = '0.0.2';
+    var VERSION = '0.0.4';
 
     var win     = window;
     var emptyFn = function() {};
 
-    var undefined,
-        isUndefined = function(who) { return undefined === who },
+    var undefined;
+
+    // 一些判断类型的函数
+    var isUndefined = function(who) { return undefined === who },
         isString    = function(who) { return 'string' == typeof who },
         isArray     = $.isArray,
         isFunction  = $.isFunction;
@@ -41,7 +43,7 @@
             error:      error,
             dataType:   dataType
         }
-    };
+    }
 
     /**
      * 执行一个 GET 请求.
@@ -50,6 +52,9 @@
         return $.ajax( _parseArgs.apply( null, arguments ) )
     }
 
+    /**
+     * 执行一个 POST 请求.
+     */
     function post(/* url, data, success, error, dataType */) {
         var options = _parseArgs.apply( null, arguments );
         options.dataType = 'POST';
@@ -119,7 +124,7 @@
         Z_IDX_CURRENT   = 3;
 
     /**
-     *
+     * 这里定义着所有 UI 的叠放次序
      * @type {{dialog: number[], dialog_mask: number[], dialog_wrapper: number[]}}
      */
     var zIndexes = {
@@ -129,11 +134,11 @@
         //dialog_stack    : [ 1, 1001, 1001, 1001 ],
         dialog_mask     : [ 1, 1000, 1000, 1000 ],
         // container
-        dialog          : [ 1, 999, 999, 999 ],
+        dialog          : [ 1, 999,  999,  999  ],
 
-        fragment        : [ 0, 1, 200, 1 ],
+        fragment        : [ 0, 1,    200,  1    ],
         // container
-        fragment_root   : [ 1, 0, 0, 0 ]
+        fragment_root   : [ 1, 0,    0,    0    ]
     };
 
     // ------------------------------------------------------------------------
@@ -284,7 +289,7 @@
     function _build(html, cancelable) {
         _ensureDialogBase();
 
-        var _d;
+        var result;
 
         // 分配一个 id 实际上就是 z-index
         var stackId = $lr._alloZIndex( $lr.DIALOG_WRAPPER );
@@ -294,10 +299,13 @@
         //$( "#dialog-stack" ).css( 'z-index', _alloZIndex( DIALOG_STACK ) );
         wrapper.css( 'z-index', stackId );
 
-        _d = {
+        result = {
             id: stackId,
 
+            // 是否可取消
             cancelable: cancelable || 1,
+
+            // 是否已被 dismiss
             dismissed: 0,
 
             _el_: {
@@ -308,10 +316,10 @@
         // 绑定方法
         var methods = [['show', show],['cancel', cancel], ['dismiss', dismiss]];
         methods.forEach( function(fn) {
-            _d[ fn[ 0 ] ] = fn[ 1 ]
+            result[ fn[ 0 ] ] = fn[ 1 ]
         } );
 
-        _dialogs[ _dialogIdx( stackId ) ] = _d;
+        _dialogs[ _dialogIdx( stackId ) ] = result;
 
         // 填充 Dialog 内容
         html && void wrapper.find( '#dialog-body').html( html );
@@ -319,7 +327,7 @@
         // 添加到 Dialog 根节点
         _dialog_root.append( wrapper );
 
-        return _d
+        return result
     }
 
     /**
@@ -568,6 +576,7 @@
 
     function attach(fragment) {
         _fragment_root.append( fragment._el_.layout );
+
         _invokeHandler( fragment, attach )
     }
 
@@ -584,7 +593,9 @@
     }
 
     function resume(fragment) {
-        fragment[ _TITLE ] && _triggerUpdateTitle( fragment.title );
+        // 更新 title
+        _triggerUpdateTitle( fragment[ _TITLE ] || $fragment.title );
+
         _invokeHandler( fragment, resume )
     }
 
@@ -682,7 +693,16 @@
         data && this._el_.layout.html( data.html )
     }
 
-    function _renderWithUrl() {
+    function _renderWithUrl(data) {
+        if ( ! data )
+            return;
+
+        var target = this;
+
+        $lr.get( data.url, function(response) {
+            // 填充 HTML 片段
+            target.isVisible() && target.render( { html: response } );
+        } );
     }
 
     var _applyHash = function(fragment) {
@@ -694,7 +714,10 @@
         var x = [ '#!', fragment[ _HASH ] ];
 
         fragment[ _ARGS ]
-            && ( x.push( _ARG_DELIMITER ), x.push( _argsUrlify( fragment[ _ARGS ] ) ) );
+            && (
+                x.push( _ARG_DELIMITER ),
+                x.push( _argsUrlify( fragment[ _ARGS ] ) )
+            );
 
         location.hash = x.join( '' );
     }
@@ -716,10 +739,12 @@
             return;
 
         layout[ 0 ].parentNode
-            || ( attach( target ),
-                create( target ),
-                createView( target ),
-                start( target ) );
+            || (
+                attach      ( target ),
+                create      ( target ),
+                createView  ( target ),
+                start       ( target )
+            );
 
         // onVisibilityChanged
         // 是否被暂停
@@ -729,12 +754,12 @@
         /*paused && */resume( target );
 
         // 隐藏当前 fragment
-        current && _hide( current, 1 );
+        current && ( pause( current), _hide( current, 1 ) );
 
         // 呈现下一个 fragment
         try {
             _show( this, isTop, 0 );
-            //! paused && _show( this, isTop, 1 );
+            // ! paused && _show( this, isTop, 1 );
         } finally {
             // 加入 BackStack
             current && ! isTop && _addToBackStack( current );
@@ -770,12 +795,37 @@
         }
     }
 
+    // TODO:
+    // finish -> back && destroy
+    function _destroy(id) {
+        if ( ! _exist( id ) )
+            return;
+
+        var current = _current;
+        var target  = getFragment( id );
+
+        if ( current === target ) {
+
+        }
+    }
+
+    function _scheduleDestroy() {
+
+    }
+
+    function _performDestroy(id) {
+        if ( ! _exist( id ) )
+            return
+    }
+
     // ------------------------------------------------------------------------
 
     function _show(target, noTransition, fromStack) {
         var layout = target._el_.layout;
 
-        console.log( '<< show # ' + target.id + ', ' + (noTransition ? '' : (fromStack ? 'fragment-pop-enter':'fragment-enter') ) );
+        console.log( '<< show # ' + target.id + ', ' + (noTransition
+                ? ''
+                : (fromStack ? 'fragment-pop-enter':'fragment-enter') ) );
 
         layout.show();
 
@@ -788,7 +838,9 @@
     function _hide(target, fromStack) {
         var layout = target._el_.layout;
 
-        console.log( '>> hide # ' + target.id + ', ' + (fromStack ? 'fragment-pop-exit':'fragment-exit') );
+        console.log( '>> hide # ' + target.id + ', ' + (fromStack
+                ? 'fragment-pop-exit'
+                : 'fragment-exit') );
 
         // properties, duration, ease, callback, delay
         layout.animate(
@@ -948,7 +1000,13 @@
         var methods = [
             // 填充内空
             [ 'render',     render ],
+            // 设置 title, 注意不是所有的场景都支持,如: 微信
             [ 'setTitle',   setTitle ],
+
+            // 销毁 & 返回上一级
+            [ 'finish',     setTitle ],
+            // 销毁 & 前往
+            [ 'finishAndGo', setTitle ],
 
             // 判别是否可见
             [ 'isVisible',  isVisible ],
@@ -977,9 +1035,7 @@
         fragment._el_           = { layout: layout };
 
         // 标题
-        fragment[ _TITLE ] = isString( config[ _TITLE ] )
-            ? config[ _TITLE ]
-            : document.title;
+        isString( config[ _TITLE ] ) && (fragment[ _TITLE ] = config[ _TITLE ]);
 
         // 解析后的 hash, lairen.ui.home -> lairen/ui/home
         fragment[ _HASH ]       = _makeIdUrlify( id );
@@ -1049,9 +1105,7 @@
     function _overrideArgs(id, args) {
         // TODO:
         var x = getFragment( id );
-        console.dir( args );
         x && (x[ _ARGS ] = args)
-        console.dir( getFragment( id ) );
     }
 
     /**
@@ -1088,8 +1142,8 @@
         if ( ! _hasArgs( rawHash ) )
             return null;
 
-        // TODO ARRAY
         var result  = {};
+        // 统计条数
         var counter = 0;
 
         var array = rawHash
@@ -1140,9 +1194,8 @@
             if ( $lr.isArray( value ) ) {
                 set = value;
 
-                for ( idx in set ) {
+                for ( idx in set )
                     result.push( key, '=', set[ idx ], '&' );
-                }
             } else {
                 result.push( key, '=', value, '&' );
             }
@@ -1214,6 +1267,11 @@
     };
 
     win.$fragment = {
+
+        /**
+         * 默认 title
+         */
+        title:      document.title,
         /**
          * 初始化一个 Fragment 并以指定的 ID 来标识。
          *
@@ -1275,9 +1333,7 @@
          * 回收一个 fragment.
          * @param id
          */
-        destroy:    function(id) {
-            // TODO:
-        }
+        destroy:    0 ? _destroy : undefined
     };
 
     // ------------------------------------------------------------------------
@@ -1295,7 +1351,11 @@
     // setTitle
     // detectHashChange => onHashChange
 
-    // 依赖该事件进行 fragment 导向
+    /**
+     * 依赖该事件进行 fragment 导向
+     * @type {string}
+     * @private
+     */
     var _LISTENER_HASH_CHANGE = 'onhashchange';
 
     /**
@@ -1311,12 +1371,16 @@
      */
     var _onHashChanged = function() {
         var oldHash = _current
-            && { hash: _current[ _HASH ], args: _current[ _ARGS ] }
-            || null;
+            && {
+                hash: _current[ _HASH ],
+                args: _current[ _ARGS ] }
+                    || null;
+
+        var hashNow = location.hash;
 
         // 是否为 page hash
-        _isViewHash( location.hash )
-            && _handleHashChange( oldHash, _resolveHash( location.hash ) );
+        _isViewHash( hashNow )
+            && _handleHashChange( oldHash, _resolveHash( hashNow ) );
     };
 
     // TODO: To detect the history back act.
@@ -1325,14 +1389,17 @@
             JSON.stringify( newHash ) + ' ' + new Date().getTime() );
 
         ! _isSameHash( oldHash, newHash )
-            && _triggerLoadFragment( newHash )
+            && _triggerGoNext( newHash )
     };
 
+    // _triggerLoadFragment
     // triggerBackward
-    var _triggerLoadFragment = function(hash, fromUser) {
+    var _triggerGoNext = function(hash, fromUser) {
         var id = _makeIdentify( hash[ _HASH ] );
 
+        // 更新 args
         _overrideArgs( id, hash[ _ARGS ] );
+        // 前往该 view
         _go( id )
     };
 
@@ -1346,7 +1413,7 @@
 
         window.addEventListener( 'popstate', function (event) {
             // To override the history state
-            history.pushState( null, null, location.href );
+            history.pushState( null, null, location.href )
         } );
     }
 }(lairen);

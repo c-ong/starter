@@ -88,20 +88,23 @@
     // ------------------------------------------------------------------------
 
     var config_login = {
+//        url: 'http://192.168.3.202/pull/login',
+
         onCreateView: function() {
-            var fragment = this;
-
-            // 加载 HTML 片段并呈现
-            var x = lairen.get(
-                'http://192.168.3.202/pull/login',
-
-                function(response) {
-                    // 填充 HTML 片段
-                    fragment.isVisible() && fragment.render({ html: response } );
-                },
-                function() {
-                }
-            );
+            this.render( { url: 'http://192.168.3.202/pull/login' } );
+//            var fragment = this;
+//
+//            // 加载 HTML 片段并呈现
+//            var x = lairen.get(
+//                'http://192.168.3.202/pull/login',
+//
+//                function(response) {
+//                    // 填充 HTML 片段
+//                    fragment.isVisible() && fragment.render({ html: response } );
+//                },
+//                function() {
+//                }
+//            );
         },
 
         onStart: function() {
