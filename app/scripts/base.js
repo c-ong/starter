@@ -6,7 +6,7 @@
 ;!function() {
     "use strict";
 
-    var VERSION = '0.0.4';
+    var VERSION = '0.0.5';
 
     var win     = window;
     var emptyFn = function() {};
@@ -58,6 +58,7 @@
     function post(/* url, data, success, error, dataType */) {
         var options = _parseArgs.apply( null, arguments );
         options.dataType = 'POST';
+
         $.ajax( options );
     }
 
@@ -124,7 +125,7 @@
         Z_IDX_CURRENT   = 3;
 
     /**
-     * 这里定义着所有 UI 的叠放次序
+     * 这里定义着所有 UI 的叠放次序.
      * @type {{dialog: number[], dialog_mask: number[], dialog_wrapper: number[]}}
      */
     var zIndexes = {
@@ -207,7 +208,7 @@
      * @type {Array}
      * @private
      */
-    var _dialogs    = [];
+    var _dialogs    = {};
 
     /**
      * The root of dialog element
@@ -294,6 +295,7 @@
         // 分配一个 id 实际上就是 z-index
         var stackId = $lr._alloZIndex( $lr.DIALOG_WRAPPER );
 
+        // 通过 clone 来快速获得 DOM 元素
         var wrapper = _DIALOG_WRAPPER_TEMPLATE.clone();
 
         //$( "#dialog-stack" ).css( 'z-index', _alloZIndex( DIALOG_STACK ) );
@@ -313,8 +315,8 @@
             }
         };
 
-        // 绑定方法
-        var methods = [['show', show],['cancel', cancel], ['dismiss', dismiss]];
+        // 对 Dialog 开放的方法
+        var methods = [['show', show], ['cancel', cancel], ['dismiss', dismiss]];
         methods.forEach( function(fn) {
             result[ fn[ 0 ] ] = fn[ 1 ]
         } );
@@ -341,7 +343,8 @@
         if ( ! $lr._isShowing( el.wrapper ) )
             return;
 
-        ! el.dismissed && _hideWrapperOnly.call( this );
+        ! el.dismissed
+            && _hideWrapperOnly.call( this );
 
         _dialog_mask.animate(
             'dialog-mask-out',
@@ -402,13 +405,14 @@
 
         current || (
             _dialog_mask.show(),
-                _dialog_root.show(),
+            _dialog_root.show(),
 
-                // properties, duration, ease, callback, delay
-                _dialog_mask.animate(
-                    'dialog-mask-in',
-                    $.fx.speeds.slow,
-                    /*'cubic-bezier(0.4, 0, 0.2, 1)'*/'linear' ) );
+            // properties, duration, ease, callback, delay
+            _dialog_mask.animate(
+                'dialog-mask-in',
+                $.fx.speeds.slow,
+                /*'cubic-bezier(0.4, 0, 0.2, 1)'*/'linear' )
+            );
 
         el.wrapper.show();
 
@@ -433,13 +437,16 @@
         if ( el.dismissed )
             return;
 
-        this._el_.dismissed = ! 0;
+        // 设置 dismiss 标识
+        el.dismissed = ! 0;
 
+        // 取消
         this.cancel();
-        this._el_.wrapper.remove();
+
+        // 移除 DOM
+        el.wrapper.remove();
 
         delete _dialogs[ _dialogIdx( this.id ) ];
-        //console.dir( _dialogs )
     }
 
     /**
@@ -481,9 +488,23 @@
      * @type {string}
      * @private
      */
-    var _HASH   = 'hash',
-        _ARGS   = 'args',
-        _TITLE  = 'title';
+    var _HASH       = 'hash',
+
+        // 配置项
+        _ARGS       = 'args',
+
+        // Fragment 的唯一标识
+        _ID         = 'id',
+
+        // Window 标题
+        _TITLE      = 'title',
+
+        // 在配置中 HTML 与 URL 只选其一, 默认使用 HTML
+        _HTML       = 'html',
+        _URL        = 'url',
+
+        // 依赖项
+        _REQUIRES   = 'requires';
 
     /**
      * 一个 fragment 从定义到销毁将会执行以下这些过程.
@@ -558,11 +579,13 @@
     function _prepare() {
         var html = [];
 
+        // Fragment 的容器
         html.push( '<div class="lairen-layout--fragment">' );
         html.push( '</div>' );
 
         _FRAGMENT_TEMPLATE = $( html.join( '' ) );
 
+        // Fragment 根节点
         _fragment_root = $( _idSelector( $lr.ID_FRAGMENT_ROOT ) );
         // 设置 z-index
         _fragment_root.css( 'z-index', $lr._alloZIndex( $lr.FRAGMENTS ) );
@@ -601,14 +624,14 @@
 
     // ------------------------------------------------------------------------
 
-    var INITIALIZING = 0;     // Not yet created.
-    var CREATED = 1;          // Created.
-    var ACTIVITY_CREATED = 2; // The activity has finished its creation.
-    var STOPPED = 3;          // Fully created, not started.
-    var STARTED = 4;          // Created and started, not resumed.
-    var RESUMED = 5;          // Created started and resumed.
+    var INITIALIZING        = 0; // Not yet created.
+    var CREATED             = 1; // Created.
+    var ACTIVITY_CREATED    = 2; // The activity has finished its creation.
+    var STOPPED             = 3; // Fully created, not started.
+    var STARTED             = 4; // Created and started, not resumed.
+    var RESUMED             = 5; // Created started and resumed.
 
-    var state = INITIALIZING;
+    var state               = INITIALIZING;
 
     function _invokeHandler(fragment, fn) {
         var handler     = METHOD_HANDLERS_MAPPING[ fn.name ],
@@ -636,12 +659,16 @@
      * { url: url, param: params }
      */
     function render(data) {
+        // TODO: URL 支持参数
         if ( ! this._el_.layout[ 0 ].parentNode )
             throw new Error( "You haven't call the show method with this fragment!" );
 
         data
-            && ( ( 'html' in data && _renderWithHtml.call( this, data ) )
-                || ( 'url' in data && _renderWithUrl.call( this, data ) ) )
+            && (
+                ( _HTML in data && _renderWithHtml.call( this, data ) )
+                ||
+                ( _URL in data && _renderWithUrl.call( this, data ) )
+            )
     }
 
     /**
@@ -690,7 +717,7 @@
     // ------------------------------------------------------------------------
 
     function _renderWithHtml(data) {
-        data && this._el_.layout.html( data.html )
+        data && this._el_.layout.html( data[ _HTML ] )
     }
 
     function _renderWithUrl(data) {
@@ -699,9 +726,10 @@
 
         var target = this;
 
-        $lr.get( data.url, function(response) {
+        $lr.get( data[ _URL ], function(response) {
             // 填充 HTML 片段
-            target.isVisible() && target.render( { html: response } );
+            /*target.isVisible()
+                && */target._el_.layout.html( response );
         } );
     }
 
@@ -730,7 +758,9 @@
 
     function _performGo() {
         var current = _current,
-            isTop = ! _hasTop(),
+            // 是否有默认 view(Stack-based)
+            isTop   = ! _hasTop(),
+            // 要前往的 fragment
             target  = this,
             layout  = target._el_.layout;
 
@@ -829,10 +859,12 @@
 
         layout.show();
 
-        noTransition || layout.animate(
-            fromStack ? 'fragment-pop-enter' : 'fragment-enter',
-            $.fx.speeds.slow,
-            'cubic-bezier(0.4, 0, 0.2, 1)'/*'linear'*/ );
+        noTransition
+            ||
+            layout.animate(
+                fromStack ? 'fragment-pop-enter' : 'fragment-enter',
+                $.fx.speeds.slow,
+                'cubic-bezier(0.4, 0, 0.2, 1)'/*'linear'*/ );
     }
 
     function _hide(target, fromStack) {
@@ -962,6 +994,9 @@
         if ( ! isString( id ) )
             throw Error( "Invalid id(" + id + ")" );
 
+        if ( $lr.isUndefined( config ) )
+            throw Error( "Must be specify the config for " + id )
+
         // TODO: 延迟初始化
         _ensure();
 
@@ -971,29 +1006,24 @@
         var fragment = _exist( id ) ? _fragments[ id ] : {};
 
         // TODO: 已经存在的是否允许更新
-        if ( 'id' in fragment )
+        if ( _ID in fragment )
             return fragment;
 
         // 分配一个 id 实际上就是 z-index
-        var stackId     = $lr._alloZIndex( $lr.FRAGMENT ),
-            requires    = undefined;
+        var stackIdx = $lr._alloZIndex( $lr.FRAGMENT ),
+            requires = undefined;
 
         // 用于容纳 fragment 内容
         var layout      = undefined;
 
         // 处理依赖项
         isPlainObject( config )
-            && 'requires' in config
+            && _REQUIRES in config
             && ( requires = _resolveRequires( config.requires ) );
 
         // --------------------------------------------------------------------
 
         layout = _FRAGMENT_TEMPLATE.clone();
-
-        // 填充 HTML 片段，如果已指定该字段
-        (config && 'html' in config)
-            && isString( config.html )
-                && layout.html( config.html );
 
         // --------------------------------------------------------------------
         // 对一个 fragment 开放的实例方法
@@ -1030,21 +1060,36 @@
         // --------------------------------------------------------------------
 
         fragment.id             = id;
-        fragment.stackIdx       = stackId;
+        fragment.stackIdx       = stackIdx;
         // DOM 节点
         fragment._el_           = { layout: layout };
 
         // 标题
-        isString( config[ _TITLE ] ) && (fragment[ _TITLE ] = config[ _TITLE ]);
+        isString( config[ _TITLE ] )
+            && (fragment[ _TITLE ] = config[ _TITLE ]);
 
         // 解析后的 hash, lairen.ui.home -> lairen/ui/home
         fragment[ _HASH ]       = _makeIdUrlify( id );
 
         // To retain the arguments if present.
-        _ARGS in config && (fragment[ _ARGS ] = config[ _ARGS ]);
+        _ARGS in config
+            && (fragment[ _ARGS ] = config[ _ARGS ]);
 
         //console.log( JSON.stringify( config ) );
         //console.log( id + " " + JSON.stringify( fragment[ _ARGS ] ) );
+
+        // --------------------------------------------------------------------
+
+        // 填充 HTML 片段，如果已指定该字段
+        if ( _HTML in config )
+            _renderWithHtml.call( fragment, config );
+        else if ( _URL in config )
+            _renderWithUrl.call( fragment, config );
+        //(config && _HTML in config)
+        //    && isString( config[ _HTML ] )
+        //        && layout.html( config[ _HTML ] );
+
+        // --------------------------------------------------------------------
 
         try {
             return fragment
@@ -1376,6 +1421,7 @@
                 args: _current[ _ARGS ] }
                     || null;
 
+        // 当前 Browser 中的 hash
         var hashNow = location.hash;
 
         // 是否为 page hash
@@ -1388,12 +1434,19 @@
         console.log( 'onHashChanged ' + JSON.stringify( oldHash ) + ' ' +
             JSON.stringify( newHash ) + ' ' + new Date().getTime() );
 
+        // 是否 hash 真的疲更新
         ! _isSameHash( oldHash, newHash )
             && _triggerGoNext( newHash )
     };
 
     // _triggerLoadFragment
     // triggerBackward
+    /**
+     * 前往指定的 fragment.
+     * @param hash
+     * @param fromUser 是否来自用户的形为
+     * @private
+     */
     var _triggerGoNext = function(hash, fromUser) {
         var id = _makeIdentify( hash[ _HASH ] );
 
@@ -1403,7 +1456,7 @@
         _go( id )
     };
 
-    // TODO addEventListener
+    // TODO(XCL): addEventListener
     _LISTENER_HASH_CHANGE in win && (window[ _LISTENER_HASH_CHANGE ] =
         _onHashChanged);
 
@@ -1411,7 +1464,7 @@
     if ( 'onpopstate' in window ) {
         history.pushState( null, null, location.href );
 
-        window.addEventListener( 'popstate', function (event) {
+        window.addEventListener( 'popstate', function () {
             // To override the history state
             history.pushState( null, null, location.href )
         } );
