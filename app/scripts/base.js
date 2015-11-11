@@ -6,7 +6,7 @@
 ;!function() {
     "use strict";
 
-    var VERSION = '0.0.5';
+    var VERSION = '0.0.6';
 
     var win     = window;
     var emptyFn = function() {};
@@ -484,6 +484,13 @@
         isPlainObject   = $.isPlainObject;
 
     /**
+     * 以 #! 打头的 hash 可识别为我们的 fragment 导向.
+     * @type {string}
+     * @private
+     */
+    var _FRAGMENT_HASH_PREFIX = '#!';
+
+    /**
      * 记录转化后的 hash 值, 及参数.
      * @type {string}
      * @private
@@ -672,6 +679,27 @@
     }
 
     /**
+     * 销毁自身并返回上一级,如果当前 view 为根级, 则不会执行该操作并返回 false.
+     * @returns {boolean}
+     */
+    function finish() {
+        if ( ! canBack() )
+            return ! 1;
+
+        var willDestroy = _current;
+
+        _scheduleDestroy( willDestroy );
+
+        back();
+
+        return ! 0
+    }
+
+    function finishAndGo() {
+
+    }
+
+    /**
      * 设置当前 title.
      * @param title
      */
@@ -717,6 +745,7 @@
     // ------------------------------------------------------------------------
 
     function _renderWithHtml(data) {
+        // To render using the html snippet
         data && this._el_.layout.html( data[ _HTML ] )
     }
 
@@ -739,7 +768,7 @@
     };
 
     function _syncHashToBrowser(fragment) {
-        var x = [ '#!', fragment[ _HASH ] ];
+        var x = [ _FRAGMENT_HASH_PREFIX, fragment[ _HASH ] ];
 
         fragment[ _ARGS ]
             && (
@@ -828,24 +857,32 @@
     // TODO:
     // finish -> back && destroy
     function _destroy(id) {
-        if ( ! _exist( id ) )
-            return;
-
         var current = _current;
         var target  = getFragment( id );
 
         if ( current === target ) {
 
         }
-    }
 
-    function _scheduleDestroy() {
+        target._el_.layout.remove();
 
+        delete _fragments[ id ];
     }
 
     function _performDestroy(id) {
-        if ( ! _exist( id ) )
-            return
+        _exist( id ) && _destroy( id )
+    }
+
+    function _scheduleDestroy(who) {
+        var id = who.id;
+
+        setTimeout( function() {
+            _performDestroy( id );
+        }, $.fx.speeds.slow * 10 + 25 )
+    }
+
+    function _requestDestroy(id) {
+
     }
 
     // ------------------------------------------------------------------------
@@ -1000,21 +1037,22 @@
         // TODO: 延迟初始化
         _ensure();
 
+        // Fragment 如果已经定义过则无需再次定义
+        var frag = _exist( id ) ? _fragments[ id ] : {};
+
         // 标识是否需要填充默认 fragment
         var hasTop = _hasTop();
 
-        var fragment = _exist( id ) ? _fragments[ id ] : {};
-
         // TODO: 已经存在的是否允许更新
-        if ( _ID in fragment )
-            return fragment;
+        if ( _ID in frag )
+            return frag;
 
         // 分配一个 id 实际上就是 z-index
         var stackIdx = $lr._alloZIndex( $lr.FRAGMENT ),
             requires = undefined;
 
         // 用于容纳 fragment 内容
-        var layout      = undefined;
+        var layout   = undefined;
 
         // 处理依赖项
         isPlainObject( config )
@@ -1034,9 +1072,9 @@
             [ 'setTitle',   setTitle ],
 
             // 销毁 & 返回上一级
-            [ 'finish',     setTitle ],
+            [ 'finish',     finish ],
             // 销毁 & 前往
-            [ 'finishAndGo', setTitle ],
+            [ 'finishAndGo', finish ],
 
             // 判别是否可见
             [ 'isVisible',  isVisible ],
@@ -1048,7 +1086,7 @@
 
         // 开放的方法
         methods.forEach( function(fn) {
-            fragment[ fn[ 0 ] ] = fn[ 1 ]
+            frag[ fn[ 0 ] ] = fn[ 1 ]
         } );
 
         // 处置 Handlers
@@ -1059,21 +1097,21 @@
 
         // --------------------------------------------------------------------
 
-        fragment.id             = id;
-        fragment.stackIdx       = stackIdx;
+        frag.id             = id;
+        frag.stackIdx       = stackIdx;
         // DOM 节点
-        fragment._el_           = { layout: layout };
+        frag._el_           = { layout: layout };
 
         // 标题
         isString( config[ _TITLE ] )
-            && (fragment[ _TITLE ] = config[ _TITLE ]);
+            && (frag[ _TITLE ] = config[ _TITLE ]);
 
         // 解析后的 hash, lairen.ui.home -> lairen/ui/home
-        fragment[ _HASH ]       = _makeIdUrlify( id );
+        frag[ _HASH ]       = _makeIdUrlify( id );
 
         // To retain the arguments if present.
         _ARGS in config
-            && (fragment[ _ARGS ] = config[ _ARGS ]);
+            && (frag[ _ARGS ] = config[ _ARGS ]);
 
         //console.log( JSON.stringify( config ) );
         //console.log( id + " " + JSON.stringify( fragment[ _ARGS ] ) );
@@ -1082,9 +1120,9 @@
 
         // 填充 HTML 片段，如果已指定该字段
         if ( _HTML in config )
-            _renderWithHtml.call( fragment, config );
+            _renderWithHtml.call( frag, config );
         else if ( _URL in config )
-            _renderWithUrl.call( fragment, config );
+            _renderWithUrl.call( frag, config );
         //(config && _HTML in config)
         //    && isString( config[ _HTML ] )
         //        && layout.html( config[ _HTML ] );
@@ -1092,24 +1130,24 @@
         // --------------------------------------------------------------------
 
         try {
-            return fragment
+            return frag
         } finally {
             // 将定义的 fragment 放入容器
-            _add( fragment );
+            _add( frag );
 
             // 呈现默认 View 如果没有有效的 view id 被指定
-            ! hasTop && _setupTop( fragment );
+            ! hasTop && _setupTop( frag );
         }
     }
 
     /**
-     * 拼装一个 Router hash 值, 用于区分常规 hash 我们的 hash 则以 ! 开头.
+     * 拼装一个 Router hash 值, 用于区分常规 hash 我们的 hash 则以 !# 开头.
      * @param id
      * @returns {string}
      * @private
      */
     function _convertIdToHash(id) {
-        return '#!' + id
+        return _FRAGMENT_HASH_PREFIX + id
     }
 
     function _convertHashToId(hash) {
@@ -1378,7 +1416,7 @@
          * 回收一个 fragment.
          * @param id
          */
-        destroy:    0 ? _destroy : undefined
+        destroy:    0 ? _requestDestroy : undefined
     };
 
     // ------------------------------------------------------------------------

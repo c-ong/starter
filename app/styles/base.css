@@ -38,6 +38,7 @@
 }
 
 .lairen-layout--fragment {
+    display: none;
     position: absolute;
     top: 0;
     left: 0;
@@ -133,5 +134,5 @@
     max-height: 34%;
     /*margin-top: -45%;*/
     border-radius: 2px;
-    box-shadow: 0px 15px 25px 0px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 15px 25px 0 rgba(0, 0, 0, 0.2);
 }
