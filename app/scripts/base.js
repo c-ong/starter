@@ -258,10 +258,10 @@
         _dialog_root = $( _idSelector( $lr.ID_DIALOG ) );
         _dialog_mask = $( _idSelector( $lr.ID_DIALOG_MASK ) )
 
+        _dialog_mask.on( 'click', _handleMaskTap );
+
         _dialog_root.css( 'z-index', $lr._alloZIndex( $lr.DIALOG ) );
         _dialog_mask.css( 'z-index', $lr._alloZIndex( $lr.DIALOG_MASK ) );
-
-        _dialog_mask.on( 'click', _handleMaskTap );
     }
 
     /**
@@ -554,7 +554,7 @@
 
     /**
      * fragment 容器.
-     * @type {Array}
+     * @type {Map}
      * @private
      */
     var _fragments  = {},
@@ -686,17 +686,71 @@
         if ( ! canBack() )
             return ! 1;
 
-        var willDestroy = _current;
-
-        _scheduleDestroy( willDestroy );
+        _scheduleDestroy( _current );
 
         back();
 
         return ! 0
     }
 
-    function finishAndGo() {
+    function _finishAndGo(id, args) {
+        // TODO: current -> update hash direct
+        _exist( id )
+            && (
+                args && _overrideArgs( id, args ),
+                _performFinishAndGo.call( getFragment( id ) )
+            )
+    }
 
+    function _performFinishAndGo() {
+        // hide current
+        // show next
+
+        // destroy current
+        // pop current
+
+        var current = _current,
+            next    = this,
+
+            // 是否有默认 view(Stack-based)
+            isTop   = ! _hasTop(),
+            // 要前往的 fragment
+            layout  = next._el_.layout;
+
+        // 是否在操作本身
+        if ( isTop || current && next == current )
+            throw new Error( 'Not implement yet!' );
+            //return;
+
+        // 隐藏当前 fragment
+        current && (
+            pause( current),
+                _hide( current, _FROM_STACK_YES )
+        );
+
+        layout[ 0 ].parentNode
+            || (
+                attach      ( next ),
+                create      ( next ),
+                createView  ( next ),
+                start       ( next )
+            );
+
+        // FIXME(XCL): 不管是否被暂停这里绝对执行恢复操作
+        resume( next );
+
+        // 呈现下一个 fragment
+        _show( next, _TRANSITION_YES, _FROM_STACK_NO );
+
+        try {
+            // 销毁 current
+            current && _scheduleDestroy( current );
+        } finally {
+            _current = next;
+
+            // 更新至 location.hash
+            _applyHash( _current )
+        }
     }
 
     /**
@@ -790,40 +844,40 @@
             // 是否有默认 view(Stack-based)
             isTop   = ! _hasTop(),
             // 要前往的 fragment
-            target  = this,
-            layout  = target._el_.layout;
+            next    = this,
+            layout  = next._el_.layout;
 
         // 是否在操作本身
-        if ( current && target == current )
+        if ( current && next == current )
             return;
 
         layout[ 0 ].parentNode
             || (
-                attach      ( target ),
-                create      ( target ),
-                createView  ( target ),
-                start       ( target )
+                attach      ( next ),
+                create      ( next ),
+                createView  ( next ),
+                start       ( next )
             );
 
         // onVisibilityChanged
         // 是否被暂停
-        var paused = ! isShowing( layout );
+        //var paused = ! isShowing( layout );
 
         // FIXME(XCL): 不管是否被暂停这里绝对执行恢复操作
-        /*paused && */resume( target );
+        /*paused && */resume( next );
 
         // 隐藏当前 fragment
-        current && ( pause( current), _hide( current, 1 ) );
+        current && ( pause( current), _hide( current, _FROM_STACK_YES ) );
 
         // 呈现下一个 fragment
         try {
-            _show( this, isTop, 0 );
+            _show( next, isTop, _FROM_STACK_NO );
             // ! paused && _show( this, isTop, 1 );
         } finally {
             // 加入 BackStack
             current && ! isTop && _addToBackStack( current );
 
-            _current = this;
+            _current = next;
 
             // 更新至 location.hash
             _applyHash( _current )
@@ -839,14 +893,14 @@
 
         pause( current )
         // 隐藏当前 fragment
-        _hide( current, 0 );
+        _hide( current, _FROM_STACK_NO );
 
         try {
             // 恢复
             resume( next );
 
             // 呈现下一个 fragment
-            _show( next, 0, 1 );
+            _show( next, _TRANSITION_YES, _FROM_STACK_YES );
         } finally {
             _current = next;
 
@@ -864,9 +918,14 @@
 
         }
 
+        _invokeHandler( target, stop );
+        _invokeHandler( target, destroyView );
+        _invokeHandler( target, destroy );
+        _invokeHandler( target, detach );
+
         target._el_.layout.remove();
 
-        delete _fragments[ id ]
+        /*delete _fragments[ id ]*/
     }
 
     function _performDestroy(id) {
@@ -876,9 +935,11 @@
     function _scheduleDestroy(who) {
         var id = who.id;
 
+        var trigger = $.fx.speeds.slow * 10 + 25;
+
         setTimeout( function() {
-            _performDestroy( id );
-        }, $.fx.speeds.slow * 10 + 25 )
+                _performDestroy( id );
+            }, trigger )
     }
 
     function _requestDestroy(id) {
@@ -887,6 +948,13 @@
 
     // ------------------------------------------------------------------------
 
+    var _TRANSITION_YES = 0,
+        _TRANSITION_NO  = 1,
+
+        _FROM_STACK_YES = 1,
+        _FROM_STACK_NO  = 0;
+
+
     function _show(target, noTransition, fromStack) {
         var layout = target._el_.layout;
 
@@ -894,6 +962,7 @@
                 ? ''
                 : (fromStack ? 'fragment-pop-enter':'fragment-enter') ) );
 
+        // Show the dom
         layout.show();
 
         noTransition
@@ -1072,9 +1141,9 @@
             [ 'setTitle',   setTitle ],
 
             // 销毁 & 返回上一级
-            [ 'finish',     finish ],
+            //[ 'finish',     finish ],
             // 销毁 & 前往
-            [ 'finishAndGo', finish ],
+            //[ 'finishAndGo', finish ],
 
             // 判别是否可见
             [ 'isVisible',  isVisible ],
@@ -1420,6 +1489,18 @@
         reload:     function(id, params) {
 
         },
+
+        /**
+         * 销毁 & 返回上一级.
+         */
+        finish:     finish,
+
+        /**
+         * 销毁当前 fragment & 前往指定 fragment.
+         * @param id
+         * @params args
+         */
+        finishAndGo:    _finishAndGo,
 
         /**
          * 回收一个 fragment.
