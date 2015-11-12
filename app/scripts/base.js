@@ -6,7 +6,7 @@
 ;!function() {
     "use strict";
 
-    var VERSION = '0.0.6';
+    var VERSION = '0.0.7';
 
     var win     = window;
     var emptyFn = function() {};
@@ -595,7 +595,7 @@
         // Fragment 根节点
         _fragment_root = $( _idSelector( $lr.ID_FRAGMENT_ROOT ) );
         // 设置 z-index
-        _fragment_root.css( 'z-index', $lr._alloZIndex( $lr.FRAGMENTS ) );
+        _fragment_root.css( 'z-index', $lr._alloZIndex( $lr.FRAGMENTS ) )
     }
 
     function _ensure() {
@@ -704,7 +704,7 @@
      * @param title
      */
     function setTitle(title) {
-        document.title = title;
+        document.title = title
     }
 
     /**
@@ -764,7 +764,7 @@
 
     var _applyHash = function(fragment) {
         // TODO
-        _syncHashToBrowser( fragment );
+        _syncHashToBrowser( fragment )
     };
 
     function _syncHashToBrowser(fragment) {
@@ -776,7 +776,7 @@
                 x.push( _argsUrlify( fragment[ _ARGS ] ) )
             );
 
-        location.hash = x.join( '' );
+        location.hash = x.join( '' )
     }
 
     function _go(id, args) {
@@ -826,7 +826,7 @@
             _current = this;
 
             // 更新至 location.hash
-            _applyHash( _current );
+            _applyHash( _current )
         }
     }
 
@@ -850,7 +850,7 @@
         } finally {
             _current = next;
 
-            _applyHash( _current );
+            _applyHash( _current )
         }
     }
 
@@ -866,7 +866,7 @@
 
         target._el_.layout.remove();
 
-        delete _fragments[ id ];
+        delete _fragments[ id ]
     }
 
     function _performDestroy(id) {
@@ -901,7 +901,7 @@
             layout.animate(
                 fromStack ? 'fragment-pop-enter' : 'fragment-enter',
                 $.fx.speeds.slow,
-                'cubic-bezier(0.4, 0, 0.2, 1)'/*'linear'*/ );
+                'cubic-bezier(0.4, 0, 0.2, 1)'/*'linear'*/ )
     }
 
     function _hide(target, fromStack) {
@@ -920,7 +920,7 @@
                 // Reset the opacity prop
                 layout.hide();
                 //layout.css( { opacity: 1 } );
-            } );
+            } )
     }
 
     // ------------------------------------------------------------------------
@@ -935,7 +935,7 @@
      * @private
      */
     function _addToBackStack(fragment) {
-        return _push( fragment );
+        return _push( fragment )
     }
 
     function _casStack(f, b) {
@@ -949,15 +949,15 @@
      */
     function _popBackStack() {
         var id = _pop();
-        return id ? getFragment( id ) : null;
+        return id ? getFragment( id ) : null
     }
 
     function _push(fragment) {
-        return _backStack.push( fragment.id );
+        return _backStack.push( fragment.id )
     }
 
     function _pop() {
-        return _backStack.pop();
+        return _backStack.pop()
     }
 
     // ------------------------------------------------------------------------
@@ -1006,7 +1006,7 @@
 
         isPlainObject( handlers ) && SUPPORTED_HANDLERS.forEach( function(fn) {
             (fn in handlers) && (map[ fn ] = handlers[ fn ])
-        } );
+        } )
     }
 
     /**
@@ -1136,7 +1136,7 @@
             _add( frag );
 
             // 呈现默认 View 如果没有有效的 view id 被指定
-            ! hasTop && _setupTop( frag );
+            ! hasTop && _setupTopIfMatch( frag )
         }
     }
 
@@ -1286,7 +1286,7 @@
 
         result.pop();
 
-        return result.join( '' );
+        return result.join( '' )
     }
 
     /**
@@ -1336,10 +1336,19 @@
      * @param fragment
      * @private
      */
-    function _setupTop(fragment) {
-        _ORIGIN_HASH
-            && _ORIGIN_HASH.hash === fragment[ _HASH ]
-            && _go( fragment.id )
+    function _setupTopIfMatch(fragment) {
+        if ( ! _ORIGIN_HASH )
+            return;
+
+        var originHash = _ORIGIN_HASH[ _HASH ],
+            originArgs = _ORIGIN_HASH[ _ARGS ];
+
+        originHash === fragment[ _HASH ]
+            && (
+                // 更新 args
+                _overrideArgs( fragment.id, originArgs ),
+                _go( fragment.id )
+            )
     }
 
     // ------------------------------------------------------------------------
@@ -1446,7 +1455,7 @@
      * @private
      */
     var _ORIGIN_HASH = _isViewHash( location.hash )
-        ? _resolveHash( location.hash ) : null;
+        ? _resolveHash( location.hash ) : null
 
     /**
      * 当 hash 变更时调用该 fn.
@@ -1464,7 +1473,7 @@
 
         // 是否为 page hash
         _isViewHash( hashNow )
-            && _handleHashChange( oldHash, _resolveHash( hashNow ) );
+            && _handleHashChange( oldHash, _resolveHash( hashNow ) )
     };
 
     // TODO: To detect the history back act.
@@ -1505,6 +1514,6 @@
         window.addEventListener( 'popstate', function () {
             // To override the history state
             history.pushState( null, null, location.href )
-        } );
+        } )
     }
 }(lairen);

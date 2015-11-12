@@ -69,7 +69,7 @@
     $fragment.define( 'view.about',
         {
             title: 'about',
-            args: { key: 'value' },
+//            args: { key: 'value' },
 
             // 可以通过该字段来指定默认内容也可以调用 render 方法来填充内容
             html: '<div id="starter"><div style="padding: 16px 0;">View 后退使用演示</div>' +
@@ -81,6 +81,7 @@
             },
 
             onResume: function(){
+                this.getArgs()['key'];
                 console.log( 'onResume ' + JSON.stringify( this.getArgs() ) )
             }
         } );
