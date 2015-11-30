@@ -6,18 +6,34 @@
 ;!function() {
     "use strict";
 
-    var VERSION = '0.0.7';
+    if ( window[ 'lairen' ] )
+        return;
 
-    var win     = window;
-    var emptyFn = function() {};
+    var VERSION = '0.0.12';
+
+    var $lr;
 
     var undefined;
+    var win     = window;
+
+    var emptyFn = function() {};
+
+    var ua      = navigator.userAgent.toLowerCase(),
+        browser = {},
+
+        wechat  = ua.match( /MicroMessenger\/([\d.]+)/ig );
+
+    // 是否运行于微信 WebView 环境
+    wechat && ( browser.wechat = 1 );
 
     // 一些判断类型的函数
     var isUndefined = function(who) { return undefined === who },
         isString    = function(who) { return 'string' == typeof who },
         isArray     = $.isArray,
-        isFunction  = $.isFunction;
+        isFunction  = $.isFunction,
+
+        // 抛出未实现异常, 仅用于开发期间防止无效的调用
+        throwNiyError = function() { throw new Error( 'Not implement yet!' ); };
 
     function _parseArgs(url, data, success, error, dataType) {
         if ( isFunction( data ) ) {
@@ -62,10 +78,7 @@
         $.ajax( options );
     }
 
-    /**
-     * Global
-     */
-    var $lr  = { undefined: undefined,
+    $lr  = { undefined: undefined,
         win:            win,
 
         // 是否为开发模式
@@ -77,9 +90,14 @@
         isArray:        isArray,
         isFunction:     isFunction,
 
+        throwNiyError:  throwNiyError,
+
         // HTTP 请求
         get:            get,
         post:           post,
+
+        // Runtime
+        browser:        browser
 
         // 提供了短名方法,用于访问 console 方法
         //log: console ? function(msg) {
@@ -159,7 +177,7 @@
 
         // 当前值
         var current = info[ Z_IDX_CURRENT ],
-            next = current;
+            next    = current;
 
         if ( info[ Z_IDX_FIXED ] )
             return next;
@@ -256,7 +274,7 @@
         _DIALOG_WRAPPER_TEMPLATE = $( html.join( '' ) );
 
         _dialog_root = $( _idSelector( $lr.ID_DIALOG ) );
-        _dialog_mask = $( _idSelector( $lr.ID_DIALOG_MASK ) )
+        _dialog_mask = $( _idSelector( $lr.ID_DIALOG_MASK ) );
 
         _dialog_mask.on( 'click', _handleMaskTap );
 
@@ -298,7 +316,6 @@
         // 通过 clone 来快速获得 DOM 元素
         var wrapper = _DIALOG_WRAPPER_TEMPLATE.clone();
 
-        //$( "#dialog-stack" ).css( 'z-index', _alloZIndex( DIALOG_STACK ) );
         wrapper.css( 'z-index', stackId );
 
         result = {
@@ -316,7 +333,11 @@
         };
 
         // 对 Dialog 开放的方法
-        var methods = [['show', show], ['cancel', cancel], ['dismiss', dismiss]];
+        var methods = [
+            ['show', show],
+            ['cancel', cancel],
+            ['dismiss', dismiss]
+        ];
         methods.forEach( function(fn) {
             result[ fn[ 0 ] ] = fn[ 1 ]
         } );
@@ -396,22 +417,24 @@
         var current = _dialog_current;
 
         // 清当前 dialog
-        (current && this != current) && void _hideWrapperOnly.call( current );
+        (current && this != current)
+            && void _hideWrapperOnly.call( current );
 
         var el = this._el_;
 
         if ( el.dismissed )
             return;
 
-        current || (
-            _dialog_mask.show(),
-            _dialog_root.show(),
+        current
+            || (
+                _dialog_mask.show(),
+                _dialog_root.show(),
 
-            // properties, duration, ease, callback, delay
-            _dialog_mask.animate(
-                'dialog-mask-in',
-                $.fx.speeds.slow,
-                /*'cubic-bezier(0.4, 0, 0.2, 1)'*/'linear' )
+                // properties, duration, ease, callback, delay
+                _dialog_mask.animate(
+                    'dialog-mask-in',
+                    $.fx.speeds.slow,
+                    /*'cubic-bezier(0.4, 0, 0.2, 1)'*/'linear' )
             );
 
         el.wrapper.show();
@@ -451,6 +474,7 @@
 
     /**
      * 初始化一个 Dialog 实例，你可以调用内建的方法来实现 show、cancel、dismiss 操作。
+     *
      * @param html HTML 片段
      * @param cancelable 是否可以被取消当点击 Mask 时
      * @returns { {id,
@@ -464,6 +488,8 @@
     $lr.dialog = function(html, cancelable) {
         return _build( html, cancelable )
     };
+
+    // TODO: auto dismiss
 }(lairen);
 
 /**
@@ -478,6 +504,7 @@
 
         win             = $lr.win,
 
+        _alloZIndex     = $lr._alloZIndex,
         _idSelector     = $lr._idSelector,
         isShowing       = $lr._isShowing,
         isString        = $lr.isString,
@@ -513,21 +540,39 @@
         // 依赖项
         _REQUIRES   = 'requires';
 
+    var _STACK_INDEX_   = '_stack_idx_',
+        _EL_            = '_el_',
+        _LAYOUT_        = '_layout_',
+        // 可能的父级 fragment
+        _PARENT_        = '_parent_';
+
+    // 是否支持多实例(Multiple instance)
+    var _MULTIPLE_INSTANCES = 'multitask',
+
+        // 是识是否为派生实例
+        //_IS_DERIVE_         = '_derive_',
+
+        // 派生后的实例 ID
+        _DERIVE_ID_         = '_derive_id_';
+
     /**
      * 一个 fragment 从定义到销毁将会执行以下这些过程.
      * @type {Array}
      */
-    var LIFECYCLE_METHODS = ("attach create createView start " +
-        "resume pause stop destroyView destroy detach")
-            .split( ' ' );
+    var LIFECYCLE_METHODS = [ "attach", "create", "createView", "start",
+        "resume", "pause", "stop", "destroyView", "destroy", "detach" ];
+
+    // Render 对应的 Callback
+    var _PRE_RENDER_HANDLER = "onPreRender",
+        _RENDERED_HANDLER   = "onRendered";
 
     /**
      * 这个 LIFECYCLE_METHODS 对应的 Callback.
      * @type {array}
      */
-    var SUPPORTED_HANDLERS = ("onAttach onCreate onCreateView onStart " +
-        "onResume onPause onStop onDestroyView onDestroy onDetach")
-            .split( ' ' );
+    var SUPPORTED_HANDLERS = [ "onAttach", "onCreate", "onCreateView", "onStart",
+        "onResume", "onPause", "onStop", "onDestroyView", "onDestroy", "onDetach",
+        _PRE_RENDER_HANDLER, _RENDERED_HANDLER ];
 
     /**
      * LIFECYCLE_METHODS 与 SUPPORTED_HANDLERS 映射关系.
@@ -537,6 +582,23 @@
     LIFECYCLE_METHODS.forEach( function(lifecycle, idx) {
         METHOD_HANDLERS_MAPPING[ lifecycle ] = SUPPORTED_HANDLERS[ idx ]
     } );
+
+    var _METHODS = [
+        // 设置 title, 注意不是所有的场景都支持,如: 微信
+        [ 'setTitle',   setTitle    ],
+
+        // 判别是否可见
+        [ 'isVisible',  isVisible   ],
+
+        // 获取参数对儿
+        [ 'getArgs',    getArgs     ],
+
+        // 填充内空
+        [ 'render',     render      ],
+
+        // 获取该 Fragment 的容器
+        [ 'getContainer', getContainer ]
+    ];
 
     /**
      * fragments 的根节点.
@@ -567,7 +629,7 @@
      */
     var _current    = undefined;
 
-    function _fragmentIdx(stackId) {
+    function _fragmentSequenceId(stackId) {
         return 'lairen-layout--fragment_' + stackId
     }
 
@@ -580,13 +642,43 @@
     }
 
     function _add(fragment) {
-        _fragments[ fragment.id ] = fragment;
+        _fragments[ _getId( fragment ) ] = fragment;
+    }
+
+    function _getId(fragment) {
+        return fragment[ _isDerive( fragment ) ? _DERIVE_ID_ : _ID ]
+    }
+
+    function _getIdForHandlers(fragment) {
+        return fragment[ _ID ]
+    }
+
+    /**
+     * 是否
+     * @param id
+     * @returns {boolean}
+     * @private
+     */
+    function _exist(id) {
+        return id in _fragments
+    }
+
+    /**
+     * 从集合中取 fragment 根据指定的 id, 如: about.
+     * @param id
+     * @returns {*}
+     */
+    function getFragment(id) {
+        // ui.view#hash
+        // ui.view#343434343
+        return _fragments[ id ]
     }
 
     function _prepare() {
         var html = [];
 
         // Fragment 的容器
+        // TODO: Progress status
         html.push( '<div class="lairen-layout--fragment">' );
         html.push( '</div>' );
 
@@ -595,7 +687,7 @@
         // Fragment 根节点
         _fragment_root = $( _idSelector( $lr.ID_FRAGMENT_ROOT ) );
         // 设置 z-index
-        _fragment_root.css( 'z-index', $lr._alloZIndex( $lr.FRAGMENTS ) )
+        _fragment_root.css( 'z-index', _alloZIndex( $lr.FRAGMENTS ) )
     }
 
     function _ensure() {
@@ -605,7 +697,10 @@
     // ------------------------------------------------------------------------
 
     function attach(fragment) {
-        _fragment_root.append( fragment._el_.layout );
+        var layout = getLayout.call( fragment );
+
+        layout.css( 'z-index', fragment[ _STACK_INDEX_ ] );
+        _fragment_root.append( layout );
 
         _invokeHandler( fragment, attach )
     }
@@ -631,6 +726,7 @@
 
     // ------------------------------------------------------------------------
 
+    // NOTE(XCL): This just reference the android fragment state.
     var INITIALIZING        = 0; // Not yet created.
     var CREATED             = 1; // Created.
     var ACTIVITY_CREATED    = 2; // The activity has finished its creation.
@@ -642,7 +738,7 @@
 
     function _invokeHandler(fragment, fn) {
         var handler     = METHOD_HANDLERS_MAPPING[ fn.name ],
-            handlers    = _handlers[ fragment.id ];
+            handlers    = _getHandlers( fragment );
 
         handlers
             && handler in handlers
@@ -650,15 +746,28 @@
                 .apply( fragment, 3 in arguments ? arguments.slice( 2 ) : [] )
     }
 
-    function rending() {
-
-    }
-
-    function rendered() {
-
+    /**
+     * 获取指定 fragment 的 callback(s).
+     * @param fragment
+     * @returns {map}
+     * @private
+     */
+    function _getHandlers(fragment) {
+        return _handlers[ _getIdForHandlers( fragment ) ]
     }
 
     // ------------------------------------------------------------------------
+
+    /**
+     * 是否强制 Render 哪怕 View 不可见.
+     * @type {boolean}
+     * @private
+     */
+    var _force_render = !! 0;
+
+    function _invokeRender(fragment, data) {
+        render.call( fragment, data )
+    }
 
     /**
      * 填充内容, 可以传入 HTML 片段或 URL.
@@ -667,15 +776,58 @@
      */
     function render(data) {
         // TODO: URL 支持参数
-        if ( ! this._el_.layout[ 0 ].parentNode )
+        if ( _force_render && ! getContainer.call( this ).parentNode )
             throw new Error( "You haven't call the show method with this fragment!" );
 
-        data
-            && (
-                ( _HTML in data && _renderWithHtml.call( this, data ) )
-                ||
-                ( _URL in data && _renderWithUrl.call( this, data ) )
-            )
+        // 是否能够立刻请求进行 render 操作
+        var immediate = data && _HTML in data;
+
+        // Before rendering
+        immediate && preRender.call( this, data );
+
+        // Rendering
+        immediate
+            ? _renderWithHtml.call( this, data )
+            : ( _URL in data && _renderWithUrl.call( this, data ) );
+
+        // After rendered
+        immediate && rendered.call( this, data );
+    }
+
+    /**
+     * 开始 render.
+     */
+    function preRender() {
+        _invokeRenderHandler( this, _PRE_RENDER_HANDLER );
+    }
+
+    /**
+     * Render 操作已交付至浏览器.
+     */
+    function rendered() {
+        _invokeRenderHandler( this, _RENDERED_HANDLER );
+    }
+
+    function _invokeRenderHandler(fragment, handler) {
+        // 目前针对多实例 fragment 我们采用的是 handler 共享机制
+        var handlers = _getHandlers( fragment );
+
+        handlers
+            && handler in handlers
+            && handlers[ handler ]
+                .call( fragment, getLayout.call( fragment ) );
+    }
+
+    /**
+     * 获取 fragment 的容器.
+     * @returns {DOM Element}
+     */
+    function getContainer() {
+        return getLayout.call( this )[ 0 ]
+    }
+
+    function getLayout() {
+        return this[ _EL_ ][ _LAYOUT_ ]
     }
 
     /**
@@ -715,18 +867,19 @@
             // 是否有默认 view(Stack-based)
             isTop   = ! _hasTop(),
             // 要前往的 fragment
-            layout  = next._el_.layout;
+            layout  = next[ _EL_ ][ _LAYOUT_ ];
 
         // 是否在操作本身
         if ( isTop || current && next == current )
-            throw new Error( 'Not implement yet!' );
+            $lr.throwNiyError();
             //return;
 
+        _casStackIfNecessary( current, next );
+
+        // 暂停当前 fragment
+        pause( current );
         // 隐藏当前 fragment
-        current && (
-            pause( current),
-                _hide( current, _FROM_STACK_YES )
-        );
+        _hide( current, _FROM_STACK_YES );
 
         layout[ 0 ].parentNode
             || (
@@ -766,7 +919,8 @@
      * @returns {*}
      */
     function isVisible() {
-        return this._el_.layout && isShowing( this._el_.layout )
+        return this[ _EL_ ][ _LAYOUT_ ]
+            && isShowing( this[ _EL_ ][ _LAYOUT_ ] )
     }
 
     function getArgs() {
@@ -800,19 +954,23 @@
 
     function _renderWithHtml(data) {
         // To render using the html snippet
-        data && this._el_.layout.html( data[ _HTML ] )
+        /*data && */this[ _EL_ ][ _LAYOUT_ ].html( data[ _HTML ] )
     }
 
     function _renderWithUrl(data) {
-        if ( ! data )
-            return;
+        //if ( ! data )
+        //    return;
 
         var target = this;
 
         $lr.get( data[ _URL ], function(response) {
             // 填充 HTML 片段
             /*target.isVisible()
-                && */target._el_.layout.html( response );
+                && *//*target[ _EL_ ][ _LAYOUT_ ].html( response );*/
+            var data = {};
+            data[ _HTML ] = response;
+
+            _invokeRender( target, data )
         } );
     }
 
@@ -822,6 +980,7 @@
     };
 
     function _syncHashToBrowser(fragment) {
+        // #!id:args
         var x = [ _FRAGMENT_HASH_PREFIX, fragment[ _HASH ] ];
 
         fragment[ _ARGS ]
@@ -835,23 +994,118 @@
 
     function _go(id, args) {
         _exist( id )
-            && ( args && _overrideArgs(id, args),
-                _performGo.call( getFragment( id ) ) )
+            && (
+                args && _overrideArgs( id, args ),
+                _performGo.call( getFragment( id ) )
+            )
     }
+
+    // ------------------------------------------------------------------------
+
+    function checkRuntime() {
+        // Object.keys && onhashchange && onpopstate && more...
+    }
+
+    function sort(args) {
+        var ordered = undefined;
+        var keys    = Object.keys( args );
+
+        if ( ! (0 in keys) ) {
+            throw new Error( "Args can't be null#" + args );
+        }
+
+        ordered = {};
+
+        keys.sort().forEach( function(key) {
+            ordered[ key ] = args[ key ];
+        } );
+
+        return ordered
+    }
+
+    // 参考: http://web.archive.org/web/20130703081745/http://www.cogs.susx.ac.uk/courses/dats/notes/html/node114.html
+    function hash(str) {
+        var hash = 0;
+
+        if ( 0 == str.length )
+            return hash;
+
+        var idx;
+
+        for ( idx = 0; idx < str.length; idx++ ) {
+            hash = 31 * hash + str.charCodeAt( idx );
+
+            // Convert to 32bit integer
+            hash |= 0;
+        }
+
+        return hash
+    }
+
+    function isSupportMultiInstance(id) {
+        // derive
+        return _exist( id )
+                && !! getFragment( id )[ _MULTIPLE_INSTANCES ]
+    }
+
+    /**
+     * 是否为派生的 fragment.
+     * @param fragment
+     * @returns {boolean}
+     * @private
+     */
+    function _isDerive(fragment) {
+        return fragment
+                && _DERIVE_ID_ in fragment
+                && fragment[ _DERIVE_ID_ ]
+    }
+
+    function _flattenArgs(args) {
+        try {
+            return JSON.stringify( sort( args ) )
+        } catch (ignored) {
+            return null
+        }
+    }
+
+    //
+    function _calculateDeriveKey(id, args) {
+        var flattenedArgs = _flattenArgs( args );
+
+        if ( null == flattenedArgs )
+            return id;
+
+        return [ id, _DERIVE_DELIMITER, hash( flattenedArgs ) ].join( '' )
+    }
+
+    /**
+     * 用于间隔实例 hashcode.
+     * @type {string}
+     * @private
+     */
+    var _DERIVE_DELIMITER = "#";
+
+    // ------------------------------------------------------------------------
 
     function _performGo() {
         var current = _current,
+
             // 是否有默认 view(Stack-based)
             isTop   = ! _hasTop(),
+
             // 要前往的 fragment
             next    = this,
-            layout  = next._el_.layout;
+
+            // DOM
+            layout  = getLayout.call( next );
 
         // 是否在操作本身
         if ( current && next == current )
             return;
 
-        layout[ 0 ].parentNode
+        _casStackIfNecessary( current, next );
+
+        ( layout[ 0 ].parentNode && '' != layout.html() )
             || (
                 attach      ( next ),
                 create      ( next ),
@@ -863,11 +1117,13 @@
         // 是否被暂停
         //var paused = ! isShowing( layout );
 
-        // FIXME(XCL): 不管是否被暂停这里绝对执行恢复操作
-        /*paused && */resume( next );
+        //_casStackIfNecessary( current, next );
 
         // 隐藏当前 fragment
         current && ( pause( current), _hide( current, _FROM_STACK_YES ) );
+
+        // FIXME(XCL): 不管是否被暂停这里绝对执行恢复操作
+        /*paused && */resume( next );
 
         // 呈现下一个 fragment
         try {
@@ -891,7 +1147,10 @@
         var current = _current;
         var next    = _popBackStack();
 
-        pause( current )
+        // FIXME:
+        //_casStackIfNecessary( current, next );
+
+        pause( current );
         // 隐藏当前 fragment
         _hide( current, _FROM_STACK_NO );
 
@@ -914,6 +1173,7 @@
         var current = _current;
         var target  = getFragment( id );
 
+        // TODO: 不允许移除顶级 fragment
         if ( current === target ) {
 
         }
@@ -923,7 +1183,8 @@
         _invokeHandler( target, destroy );
         _invokeHandler( target, detach );
 
-        target._el_.layout.remove();
+        // DOM 移除
+        target[ _EL_ ][ _LAYOUT_ ].remove();
 
         /*delete _fragments[ id ]*/
     }
@@ -933,7 +1194,7 @@
     }
 
     function _scheduleDestroy(who) {
-        var id = who.id;
+        var id = who[ _ID ];
 
         var trigger = $.fx.speeds.slow * 10 + 25;
 
@@ -956,9 +1217,9 @@
 
 
     function _show(target, noTransition, fromStack) {
-        var layout = target._el_.layout;
+        var layout = target[ _EL_ ][ _LAYOUT_ ];
 
-        console.log( '<< show # ' + target.id + ', ' + (noTransition
+        $lr.dev && console.log( '<< show # ' + target[ _ID ] + ', ' + (noTransition
                 ? ''
                 : (fromStack ? 'fragment-pop-enter':'fragment-enter') ) );
 
@@ -974,9 +1235,9 @@
     }
 
     function _hide(target, fromStack) {
-        var layout = target._el_.layout;
+        var layout = target[ _EL_ ][ _LAYOUT_ ];
 
-        console.log( '>> hide # ' + target.id + ', ' + (fromStack
+        $lr.dev && console.log( '>> hide # ' + target[ _ID ] + ', ' + (fromStack
                 ? 'fragment-pop-exit'
                 : 'fragment-exit') );
 
@@ -1007,8 +1268,25 @@
         return _push( fragment )
     }
 
-    function _casStack(f, b) {
+    function _casStackIfNecessary(b, f) {
+        if ( ! b )
+            return;
 
+        var back  = b[ _STACK_INDEX_ ],
+            front = f[ _STACK_INDEX_ ];
+
+        if ( front > back )
+            return;
+
+        front = front ^ back;
+        back  = back ^ front;
+        front = front ^ back;
+
+        b[ _STACK_INDEX_ ] = back;
+        f[ _STACK_INDEX_ ] = front;
+
+        b[ _EL_ ][ _LAYOUT_ ].css( 'z-index', back );
+        f[ _EL_ ][ _LAYOUT_ ].css( 'z-index', front );
     }
 
     /**
@@ -1022,7 +1300,7 @@
     }
 
     function _push(fragment) {
-        return _backStack.push( fragment.id )
+        return _backStack.push( fragment[ _ID ] )
     }
 
     function _pop() {
@@ -1053,15 +1331,6 @@
 
     // ------------------------------------------------------------------------
 
-    /**
-     * 从集合中取 fragment 根据指定的 id, 如: about.
-     * @param id
-     * @returns {*}
-     */
-    function getFragment(id) {
-        return _fragments[ id ]
-    }
-
     function _resolveRequires(requires) {
         // TODO:
     }
@@ -1073,26 +1342,102 @@
     function _settleHandlers(id, handlers) {
         var map = _handlers[ id ] = {};
 
-        isPlainObject( handlers ) && SUPPORTED_HANDLERS.forEach( function(fn) {
-            (fn in handlers) && (map[ fn ] = handlers[ fn ])
-        } )
+        isPlainObject( handlers )
+            && SUPPORTED_HANDLERS.forEach( function(fn) {
+                (fn in handlers) && (map[ fn ] = handlers[ fn ])
+            } );
     }
 
-    /**
-     * 是否
-     * @param id
-     * @returns {boolean}
-     * @private
-     */
-    function _exist(id) {
-        return id in _fragments
+    function _bindMethods(target) {
+        _METHODS.forEach( function(fn) {
+            target[ fn[ 0 ] ] = fn[ 1 ]
+        } );
+    }
+
+    function _buildDerive(sourceId, deriveId, args) {
+        var derive = _copyByClone( getFragment( sourceId ) );
+
+        // --------------------------------------------------------------------
+
+        // 对一个 fragment 开放的实例方法
+        _bindMethods( derive );
+
+        // 派生的标识(用到标识唯一)
+        Object.defineProperty(
+                derive,
+                _DERIVE_ID_,
+                { value: deriveId, writable: 0 }
+            );
+
+        // 赋于新的 stack index, 实际上就是 z-index
+        derive[ _STACK_INDEX_ ] = _alloZIndex( $lr.FRAGMENT );
+        // XXX: DOM 节点, 如果为祖先级实例则该 DOM 只会被用于 clone
+        derive[ _EL_ ] = {};
+        derive[ _EL_ ][ _LAYOUT_ ] = _FRAGMENT_TEMPLATE.clone();
+
+        //derive[ _EL_ ][ _LAYOUT_ ][ 0 ][ 'id' ] = _fragmentSequenceId(
+        //    derive[ _STACK_INDEX_ ] );
+
+        // To retain the arguments if present.
+        derive[ _ARGS ] = args;
+
+        // 填充 HTML 片段，如果已指定该字段
+        if ( _HTML in derive ) {
+            //_invokeRender( derive );
+            //_renderWithHtml.call( derive, { html: derive[ _HTML ] } );
+        } else if ( _URL in derive ) {
+            //_invokeRender( derive );
+            //_renderWithUrl.call( derive, { url: derive[ _URL ] } );
+        }
+
+        try {
+            return derive
+        } finally {
+            // 将 clone 的 fragment 放入容器
+            _add( derive );
+        }
+    }
+
+    function _copyByClone(source) {
+        var clone = {};
+
+        // Inherit: 处理依赖项
+
+        // Inherit: 处置 Handlers
+
+        // Id 也复制但不使用
+        _copyIfExist( source, clone, _ID );
+
+        // 标题
+        _copyIfExist( source, clone, _TITLE );
+
+        // 解析后的 hash, lairen.ui.home -> lairen/ui/home
+        _copyIfExist( source, clone, _HASH );
+
+        // 是否支持多实例, 如支持多实例则祖先仅终不会被添加至 DOM 中
+        _copyIfExist( source, clone, _MULTIPLE_INSTANCES );
+
+        // --------------------------------------------------------------------
+
+        // HTML 片段或 URL，如果已指定该字段
+        if ( _HTML in source ) {
+            clone[ _HTML ] = source[ _HTML ];
+        } else if ( _URL in source ) {
+            clone[ _URL ] = source[ _URL ];
+        }
+
+        return clone
+    }
+
+    function _copyIfExist(source, dest, key) {
+        key in source && (dest[ key ] = source[ key ])
     }
 
     /**
      * 构建一个 fragment.
-     * @param id
-     * @param config
-     * @returns {{}}
+     * @param id 唯一的 fragment 标识,如: ui.about
+     * @param config fragment 的配置数据
+     * @returns fragment
      * @private
      */
     function _build(id, config) {
@@ -1107,7 +1452,7 @@
         _ensure();
 
         // Fragment 如果已经定义过则无需再次定义
-        var frag = _exist( id ) ? _fragments[ id ] : {};
+        var frag = _exist( id ) ? getFragment( id ) : {};
 
         // 标识是否需要填充默认 fragment
         var hasTop = _hasTop();
@@ -1116,12 +1461,18 @@
         if ( _ID in frag )
             return frag;
 
-        // 分配一个 id 实际上就是 z-index
-        var stackIdx = $lr._alloZIndex( $lr.FRAGMENT ),
+        // TODO: 这样会造成祖级元素无法被合理使用
+        // 是否为祖先级实例
+        var isAncestor = _MULTIPLE_INSTANCES in config
+            && !! config[ _MULTIPLE_INSTANCES ];
+
+        // 分配一个 idx 实际上就是 z-index
+        var stackIdx = _alloZIndex( $lr.FRAGMENT ),
             requires = undefined;
 
         // 用于容纳 fragment 内容
-        var layout   = undefined;
+        var layout   = _FRAGMENT_TEMPLATE.clone();
+        //layout[ 0 ][ 'id' ] = _fragmentSequenceId( stackIdx );
 
         // 处理依赖项
         isPlainObject( config )
@@ -1130,33 +1481,8 @@
 
         // --------------------------------------------------------------------
 
-        layout = _FRAGMENT_TEMPLATE.clone();
-
-        // --------------------------------------------------------------------
         // 对一个 fragment 开放的实例方法
-        var methods = [
-            // 填充内空
-            [ 'render',     render ],
-            // 设置 title, 注意不是所有的场景都支持,如: 微信
-            [ 'setTitle',   setTitle ],
-
-            // 销毁 & 返回上一级
-            //[ 'finish',     finish ],
-            // 销毁 & 前往
-            //[ 'finishAndGo', finish ],
-
-            // 判别是否可见
-            [ 'isVisible',  isVisible ],
-            // 获取参数对儿
-            [ 'getArgs',    getArgs ]
-            //[ 'canBack',      canBack ],
-            //[ 'back',         back    ]
-        ];
-
-        // 开放的方法
-        methods.forEach( function(fn) {
-            frag[ fn[ 0 ] ] = fn[ 1 ]
-        } );
+        _bindMethods( frag );
 
         // 处置 Handlers
         _settleHandlers( id, config );
@@ -1166,10 +1492,14 @@
 
         // --------------------------------------------------------------------
 
-        frag.id             = id;
-        frag.stackIdx       = stackIdx;
-        // DOM 节点
-        frag._el_           = { layout: layout };
+        // Fragment 的 id
+        frag[ _ID ]             = id;
+        // 叠放次序
+        frag[ _STACK_INDEX_ ]   = stackIdx;
+
+        // XXX: DOM 节点, 如果为祖先级实例则该 DOM 只会被用于 clone
+        frag[ _EL_ ]             = {};
+        frag[ _EL_ ][ _LAYOUT_ ] = layout;
 
         // 标题
         isString( config[ _TITLE ] )
@@ -1182,16 +1512,29 @@
         _ARGS in config
             && (frag[ _ARGS ] = config[ _ARGS ]);
 
-        //console.log( JSON.stringify( config ) );
-        //console.log( id + " " + JSON.stringify( fragment[ _ARGS ] ) );
+        // 是否支持多实例, 如支持多实例则祖先仅终不会被添加至 DOM 中
+        isAncestor
+            && Object.defineProperty(
+                frag,
+                _MULTIPLE_INSTANCES,
+                { value: 1, writable: 0 }
+            );
 
         // --------------------------------------------------------------------
 
         // 填充 HTML 片段，如果已指定该字段
-        if ( _HTML in config )
-            _renderWithHtml.call( frag, config );
-        else if ( _URL in config )
-            _renderWithUrl.call( frag, config );
+        //if ( ! isAncestor ) {
+        if ( _HTML in config ) {
+            frag[ _HTML ] = config[ _HTML ];
+            _invokeRender( frag, frag );
+            //_renderWithHtml.call( frag, config );
+        } else if ( _URL in config ) {
+            frag[ _URL ] = config[ _URL ];
+            _invokeRender( frag, frag );
+            //_renderWithUrl.call( frag, config );
+        }
+        //}
+
         //(config && _HTML in config)
         //    && isString( config[ _HTML ] )
         //        && layout.html( config[ _HTML ] );
@@ -1294,15 +1637,17 @@
         if ( ! _hasArgs( rawHash ) )
             return null;
 
-        var result  = {};
-        // 统计条数
-        var counter = 0;
+        var result  = {},
 
-        var array = rawHash
-            .substr( 1 + rawHash.indexOf( _ARG_DELIMITER ) )
-            .split( '&' );
+            // 统计条数
+            counter = 0,
 
-        var idx, pair, key, value, set;
+            array = rawHash
+                .substr( 1 + rawHash.indexOf( _ARG_DELIMITER ) )
+                .split( '&' ),
+
+            // 索引, 参数对儿, 参数名, 参数, 数组
+            idx, pair, key, value, set;
 
         for ( idx in array ) {
             pair    = array[ idx ].split( '=' );
@@ -1314,7 +1659,8 @@
 
             if ( key in result ) {
                 set = $lr.isArray( value )
-                    ? value : [ key ];
+                    ? value
+                    : [ key ];
                 set.push( value );
 
                 result[ key ] = set;
@@ -1415,8 +1761,8 @@
         originHash === fragment[ _HASH ]
             && (
                 // 更新 args
-                _overrideArgs( fragment.id, originArgs ),
-                _go( fragment.id )
+                _overrideArgs( fragment[ _ID ], originArgs ),
+                _go( fragment[ _ID ] )
             )
     }
 
@@ -1430,22 +1776,97 @@
     win.$fragment = {
 
         /**
-         * 默认 title
+         * 默认 title(初始为 host 页面 title)
          */
         title:      document.title,
+
         /**
-         * 初始化一个 Fragment 并以指定的 ID 来标识。
+         * 初始化一个 Fragment 实例并以指定的 ID 来标识。
          *
-         * e.g: package.views.home
-         *      package.views.help
-         *      package.views.about
+         * <pre>
+         * e.g:
+         *
+         * 定义一个 fragment:
+         *
+         * $fragment.define(
+         *      'namespace.views.about',      // fragment 唯一标识，必选项
          *
          *      config {
-         *           backable: false,
-         *           requires: {String/[]},
-         *           html: {}
-         *      }
+         *           title:    'Untitled',    // 标题用于显示在支持的浏览器上
+         *           multitask: 1,            // 标明该 fragmnet 是否支持多实例,
+         *                                    // 既 Multiple Instances, 此项与
+         *                                    // clearContentOnLeave 互斥
+         *           args:     {key: 'value'} // 参数对儿
+         *           backable: false,         // 是否可后退
+         *           requires: {String/[]},   // 依赖项
+         *           html/url: 'URL or HTML',  // 完整 URL 或 HTML 片段
          *
+         *           onAttach: function() {
+         *              // fragment 容器被添加到 DOM 中后会调用
+         *           },
+         *
+         *           onCreate: function() {
+         *              // 当 fragment 被创建时调用该 callback
+         *           },
+         *
+         *           onCreateView: function() {
+         *           },
+         *
+         *           onStart: function() {
+         *           },
+         *
+         *           onResume: function() {
+         *              // fragment 被恢复, 也就是可见状态
+         *           },
+         *
+         *           // -------------- 以下为对应的周期 callback -----------------
+         *
+         *           onPause: function() {
+         *              // 当 fragment 不可见时会调用该 callback
+         *           },
+         *
+         *           onStop: function() {
+         *              // 如果要对一个 fragment 执行 destroy 操作会调用该 callback
+         *           },
+         *
+         *           onDestroyView: function() {
+         *           },
+         *
+         *           onDestroy: function() {
+         *           },
+         *
+         *           onDetach: function() {
+         *              // 这是 destroy 的最后一步环节, 将容器从 DOM 中移出
+         *           },
+         *
+         *           // -------------- 以下为 Render 对应的 callback ------------
+         *
+         *           onPreRender: function(container) {
+         *              // 开始 Render 操作, 比如你可以在上里作一些 Reset 操作
+         *           },
+         *
+         *           onRendered: function(container) {
+         *              // Render 操作已交付至浏览器, 你可以在这里对你的 DOM 进行操作,
+         *              // 如果你 DOM 的 id 不是唯一的那么请基于 container 进行查找,
+         *              // 如若不是我们也建议您基于该 container 进行查找以便提升速度,
+         *              // 另外我们也对 fragment 实例开放了 getContainer() 方法, 只
+         *              // 是你需要注意调用的环节, 如还没有进行过 attach 操作, 我们不
+         *              // 建议调用该方法.
+         *
+         *              // e.g.
+         *              console.dir( $( '#idx', container ) );
+         *           }
+         *      } );
+         *
+         * 调用该 fn 会创建一个 fragment 的实例, 该实例持有以下方法:
+         *
+         *  1: setTitle     设置该 fragmnet 对应的标题
+         *  2: isVisible    判断该 fragment 是否可见
+         *  3: getArgs      获取参数对儿
+         *  4: render       渲染 UI 依照给定的参数类型
+         *  5: getContainer 获取 fragment 的容器
+         *
+         * </pre>
          * @param id
          * @param config
          * @returns {object} 一个 fragment 实例
@@ -1461,7 +1882,7 @@
         },
 
         /**
-         * 呈现指定的 fragment, 如: about.
+         * 呈现指定的 fragment, 如: ui.about.
          * @param id
          * @param args
          */
@@ -1474,6 +1895,7 @@
 
         /**
          * 请求进行后退操作, 如果 BackStack 有可用的记录.
+         * @return {boolean} true 说明后退操作有效, 反则无效
          */
         back:       back,
 
@@ -1484,34 +1906,44 @@
          */
         update:     function(id, params) {
             // TODO:
+            $lr.throwNiyError();
         },
 
         reload:     function(id, params) {
-
+            $lr.throwNiyError();
         },
 
         /**
-         * 销毁 & 返回上一级.
+         * 销毁当前 fragment & 返回上一级.
+         * Note: 如果当前为根级则该方法不会被执行
          */
         finish:     finish,
 
         /**
          * 销毁当前 fragment & 前往指定 fragment.
+         * Note: 如果当前为根级则该方法不会被执行
          * @param id
          * @params args
          */
-        finishAndGo:    _finishAndGo,
+        finishAndGo: _finishAndGo,
 
         /**
          * 回收一个 fragment.
          * @param id
          */
-        destroy:    0 ? _requestDestroy : undefined
+        destroy:    $lr.throwNiyError
     };
 
     // ------------------------------------------------------------------------
 
     // TODO:
+    // handling unknown id
+    // put => get => remove
+    // onPreRender => onRendered
+    // progress status
+    // root color
+    // parent -> back
+    // url with args
     // clearContentOnLeave
     // destroyOnLeave
     // open fragment
@@ -1536,7 +1968,8 @@
      * @private
      */
     var _ORIGIN_HASH = _isViewHash( location.hash )
-        ? _resolveHash( location.hash ) : null
+        ? _resolveHash( location.hash )
+        : null;
 
     /**
      * 当 hash 变更时调用该 fn.
@@ -1544,10 +1977,9 @@
      */
     var _onHashChanged = function() {
         var oldHash = _current
-            && {
-                hash: _current[ _HASH ],
+            ? { hash: _current[ _HASH ],
                 args: _current[ _ARGS ] }
-                    || null;
+            : null;
 
         // 当前 Browser 中的 hash
         var hashNow = location.hash;
@@ -1559,10 +1991,10 @@
 
     // TODO: To detect the history back act.
     var _handleHashChange = function(oldHash, newHash) {
-        console.log( 'onHashChanged ' + JSON.stringify( oldHash ) + ' ' +
-            JSON.stringify( newHash ) + ' ' + new Date().getTime() );
+        $lr.dev && console.log( 'onHashChanged ' + JSON.stringify( oldHash )
+            + ' ' + JSON.stringify( newHash ) + ' ' + new Date().getTime() );
 
-        // 是否 hash 真的疲更新
+        // 是否 hash 真的需要更新
         ! _isSameHash( oldHash, newHash )
             && _triggerGoNext( newHash )
     };
@@ -1578,22 +2010,51 @@
     var _triggerGoNext = function(hash, fromUser) {
         var id = _makeIdentify( hash[ _HASH ] );
 
+        if ( isSupportMultiInstance( id ) )
+            _goNextWithMultiMode( id, hash[ _ARGS ], fromUser );
+        else
+            _goNext( id, hash[ _ARGS ], fromUser );
+    };
+
+    function _goNext(id, args, fromUser) {
         // 更新 args
-        _overrideArgs( id, hash[ _ARGS ] );
+        _overrideArgs( id, args );
+
         // 前往该 view
         _go( id )
-    };
+    }
+
+    function _goNextWithMultiMode(id, args, fromUser) {
+        // Step 1: 是否支持多实例
+        // Step 2: 如果支持看实例是否被创建
+        // Step 3: 前往实例
+
+        // 对于多实例 fragment 我们使用在其基本 id 之上加 args 的 hashcode 用于区分，
+        // 如：ui.view#123456
+        var deriveId = _calculateDeriveKey( id, args );
+
+        // XXX: 实际上我们是依赖 args 的不同来维护多实例，但这并不意味着允许 args 为 null
+        if ( id == deriveId ) {
+            _goNext( id, args, fromUser );
+            return;
+        }
+
+        _exist( deriveId ) || _buildDerive( id, deriveId, args );
+
+        _go( deriveId );
+    }
 
     // TODO(XCL): addEventListener
     _LISTENER_HASH_CHANGE in win && (window[ _LISTENER_HASH_CHANGE ] =
         _onHashChanged);
 
     // FIXME(XCL): Trying to prevent the user backward operation
+
     if ( 'onpopstate' in window ) {
         history.pushState( null, null, location.href );
 
         window.addEventListener( 'popstate', function () {
-            // To override the history state
+            // FIXME: To override the history state
             history.pushState( null, null, location.href )
         } )
     }
