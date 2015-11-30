@@ -61,3 +61,4 @@ Card
 *.hprof
 ignored
 /customer-lite-v2/db.sql
+/styles/ref.store.css
