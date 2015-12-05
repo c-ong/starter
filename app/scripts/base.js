@@ -10,7 +10,7 @@
     if ( window[ 'lairen' ] )
         return;
 
-    var VERSION = '0.0.13';
+    var VERSION = '0.0.14';
 
     var $lr;
 
@@ -1904,8 +1904,8 @@
          * 构建并呈现 fragment 如果当前不含有效的 hash 则使用指定的作为初始 fragment.
          * @param id
          */
-        beginWith:  function(id) {
-            _ORIGIN_HASH || _go( id )
+        beginWith:  function(id, args) {
+            _ORIGIN_HASH || _go( id, args )
         },
 
         /**
