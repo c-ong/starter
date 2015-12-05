@@ -6,10 +6,11 @@
 ;!function() {
     "use strict";
 
+    /* FIXME(XCL): 考虑 App 注入场景 */
     if ( window[ 'lairen' ] )
         return;
 
-    var VERSION = '0.0.12';
+    var VERSION = '0.0.13';
 
     var $lr;
 
@@ -219,6 +220,9 @@
     "use strict";
 
     var undefined   = $lr.undefined,
+        isArray     = $lr.isArray,
+        isFunction  = $lr.isFunction,
+        isUndefined = $lr.isUndefined,
         _idSelector = $lr._idSelector;
 
     /**
@@ -268,7 +272,7 @@
         var html = [];
 
         html.push( '<div class="dialog-wrapper" id="dialog-wrapper">' );
-        html.push( '<div id="dialog-body"></div>' );
+        html.push( '<div id="dialog_body"></div>' );
         html.push( '</div>' );
 
         _DIALOG_WRAPPER_TEMPLATE = $( html.join( '' ) );
@@ -305,10 +309,12 @@
      *          wrapper: (*|jQuery|HTMLElement)}}|*}
      * @private
      */
-    function _build(html, cancelable) {
+    function _build(html, cancelable, actions) {
         _ensureDialogBase();
 
-        var result;
+        isArray( cancelable ) && (actions = cancelable, cancelable = undefined);
+
+        var model;
 
         // 分配一个 id 实际上就是 z-index
         var stackId = $lr._alloZIndex( $lr.DIALOG_WRAPPER );
@@ -318,11 +324,11 @@
 
         wrapper.css( 'z-index', stackId );
 
-        result = {
+        model = {
             id: stackId,
 
             // 是否可取消
-            cancelable: cancelable || 1,
+            cancelable: !!cancelable || 1,
 
             // 是否已被 dismiss
             dismissed: 0,
@@ -334,23 +340,44 @@
 
         // 对 Dialog 开放的方法
         var methods = [
-            ['show', show],
-            ['cancel', cancel],
-            ['dismiss', dismiss]
+            [ 'show',       show    ],
+            [ 'cancel',     cancel  ],
+            [ 'dismiss',    dismiss ]
         ];
         methods.forEach( function(fn) {
-            result[ fn[ 0 ] ] = fn[ 1 ]
+            model[ fn[ 0 ] ] = fn[ 1 ]
         } );
 
-        _dialogs[ _dialogIdx( stackId ) ] = result;
+        _dialogs[ _dialogIdx( stackId ) ] = model;
 
         // 填充 Dialog 内容
-        html && void wrapper.find( '#dialog-body').html( html );
+        html && void wrapper.find( '#dialog_body').html( html );
 
         // 添加到 Dialog 根节点
         _dialog_root.append( wrapper );
 
-        return result
+        actions && _setUpActionsIfNecessary( model, actions );
+
+        return model
+    }
+
+    function _setUpActionsIfNecessary(model, actions) {
+        var ctx = model._el_.wrapper;
+        var id, callback, target;
+
+        actions.forEach( function(action) {
+            id          = action[ 'id' ];
+            callback    = action[ 'callback' ];
+
+            id
+            && callback
+            && (
+                target = $( '#' + id, ctx ),
+                target.on( 'click', function() {
+                    callback.call( model );
+                } )
+            );
+        });
     }
 
     /**
@@ -485,8 +512,8 @@
      *            mask: (*|jQuery|HTMLElement),
      *            wrapper: (*|jQuery|HTMLElement)}}|* }
      */
-    $lr.dialog = function(html, cancelable) {
-        return _build( html, cancelable )
+    $lr.dialog = function(html, cancelable, actions) {
+        return _build( html, cancelable, actions )
     };
 
     // TODO: auto dismiss
@@ -1793,7 +1820,7 @@
          *
          *      config {
          *           title:    'Untitled',    // 标题用于显示在支持的浏览器上
-         *           multitask: 1,            // 标明该 fragmnet 是否支持多实例,
+         *           multitask: 1,            // 标明该 fragment 是否支持多实例,
          *                                    // 既 Multiple Instances, 此项与
          *                                    // clearContentOnLeave 互斥
          *           args:     {key: 'value'} // 参数对儿
@@ -1904,12 +1931,12 @@
          * @param id
          * @param params
          */
-        update:     function(id, params) {
+        update:     function(id, args) {
             // TODO:
             $lr.throwNiyError();
         },
 
-        reload:     function(id, params) {
+        reload:     function(id, args) {
             $lr.throwNiyError();
         },
 
@@ -1935,6 +1962,9 @@
     };
 
     // ------------------------------------------------------------------------
+
+    // UBG(s):
+    // $lairen.get -> error
 
     // TODO:
     // handling unknown id
