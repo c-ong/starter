@@ -96,6 +96,12 @@
     var config_login = {
         url: 'http://192.168.3.202/pull/login',
 
+        onReload: function() {
+            console.log( 'onReload' );
+            console.dir( this );
+            this.render( { url: 'http://192.168.3.202/pull/login' } );
+        },
+
         onStart: function () {
             console.log('onStart')
         },

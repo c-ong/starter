@@ -10,7 +10,8 @@
     if ( window[ 'lairen' ] )
         return;
 
-    var VERSION = '0.0.15';
+    /* 版本号 */
+    var VERSION = '0.0.16';
 
     var $lr;
 
@@ -22,18 +23,19 @@
     var ua      = navigator.userAgent.toLowerCase(),
         browser = {},
 
+        /* 是否为微信环境 */
         wechat  = ua.match( /MicroMessenger\/([\d.]+)/ig );
 
-    // 是否运行于微信 WebView 环境
+    /* 是否运行于微信 WebView 环境 */
     wechat && ( browser.wechat = 1 );
 
-    // 一些判断类型的函数
+    /* 一些判断类型的函数 */
     var isUndefined = function(who) { return undefined === who },
         isString    = function(who) { return 'string' == typeof who },
         isArray     = $.isArray,
         isFunction  = $.isFunction,
 
-    // 抛出未实现异常, 仅用于开发期间防止无效的调用
+    /* 抛出未实现异常, 仅用于开发期间防止无效的调用 */
         throwNiyError = function() { throw new Error( 'Not implement yet!' ); };
 
     function _parseArgs(url, data, success, error, dataType) {
@@ -82,10 +84,10 @@
     $lr  = { undefined: undefined,
         win:            win,
 
-        // 是否为开发模式
+        /* 是否为开发模式 */
         dev:            1,
 
-        // 用于判断类型的函数
+        /* 用于判断类型的函数 */
         isUndefined:    isUndefined,
         isString:       isString,
         isArray:        isArray,
@@ -93,23 +95,24 @@
 
         throwNiyError:  throwNiyError,
 
-        // HTTP 请求
+        /* HTTP 请求 */
         get:            get,
         post:           post,
 
-        // Runtime
+        /* Runtime */
         browser:        browser
 
-        // 提供了短名方法,用于访问 console 方法
-        //log: console ? function(msg) {
-        //    lairen.dev && console.log( msg )
-        //} : emptyFn,
-        //dir: console ? function(obj) {
-        //    lairen.dev && console.dir( obj )
-        //} : emptyFn,
-        //error: console ? function(msg) {
-        //    lairen.dev && console.error( msg )
-        //} : emptyFn
+        /* 提供了短名方法,用于访问 console 方法 */
+        /*
+        log: console ? function(msg) {
+            lairen.dev && console.log( msg )
+        } : emptyFn,
+        dir: console ? function(obj) {
+            lairen.dev && console.dir( obj )
+        } : emptyFn,
+        error: console ? function(msg) {
+            lairen.dev && console.error( msg )
+        } : emptyFn */
     };
 
     /**
@@ -119,24 +122,24 @@
      */
     var _viewport       = undefined;
 
-    // ------------------------------------------------------------------------
+    /* --------------------------------------------------------------------- */
 
-    // Exend
+    /* Extend */
     $lr.ID_DIALOG        = 'lairen-dialog';
     $lr.ID_DIALOG_MASK   = 'dialog-mask';
     $lr.ID_FRAGMENT_ROOT = 'lairen-fragments';
 
-    // Layer manager
-    // hasTopLayer
+    /* Layer manager */
+    /* hasTopLayer */
 
     $lr.DIALOG_WRAPPER  = 'dialog_wrapper';
-    //DIALOG_STACK  = 'dialog_stack',
+    /* DIALOG_STACK  = 'dialog_stack', */
     $lr.DIALOG_MASK     = 'dialog_mask';
     $lr.DIALOG          = 'dialog';
     $lr.FRAGMENT        = 'fragment';
     $lr.FRAGMENTS       = 'fragment_root';
 
-    // ------------------------------------------------------------------------
+    /* --------------------------------------------------------------------- */
 
     var Z_IDX_FIXED     = 0,
         Z_IDX_MIN       = 1,
@@ -148,20 +151,20 @@
      * @type {{dialog: number[], dialog_mask: number[], dialog_wrapper: number[]}}
      */
     var zIndexes = {
-        // fixed, min, max, current
+        /* fixed, min, max, current */
 
         dialog_wrapper  : [ 0, 1002, 2000, 1002 ],
-        //dialog_stack    : [ 1, 1001, 1001, 1001 ],
+        /* dialog_stack    : [ 1, 1001, 1001, 1001 ], */
         dialog_mask     : [ 1, 1000, 1000, 1000 ],
-        // container
+        /* container */
         dialog          : [ 1, 999,  999,  999  ],
 
         fragment        : [ 0, 1,    200,  1    ],
-        // container
+        /* container */
         fragment_root   : [ 1, 0,    0,    0    ]
     };
 
-    // ------------------------------------------------------------------------
+    /* --------------------------------------------------------------------- */
 
     /**
      * 分配一个 z-index 用于 UI 的呈现。
@@ -206,7 +209,7 @@
         return z_obj && 'none' !== z_obj.css( 'display' )
     };
 
-    // ------------------------------------------------------------------------
+    /* --------------------------------------------------------------------- */
 
     win.lairen = $lr
 }();
@@ -316,10 +319,10 @@
 
         var model;
 
-        // 分配一个 id 实际上就是 z-index
+        /* 分配一个 id 实际上就是 z-index */
         var stackId = $lr._alloZIndex( $lr.DIALOG_WRAPPER );
 
-        // 通过 clone 来快速获得 DOM 元素
+        /* 通过 clone 来快速获得 DOM 元素 */
         var wrapper = _DIALOG_WRAPPER_TEMPLATE.clone();
 
         wrapper.css( 'z-index', stackId );
@@ -327,10 +330,10 @@
         model = {
             id: stackId,
 
-            // 是否可取消
+            /* 是否可取消 */
             cancelable: !!cancelable || 1,
 
-            // 是否已被 dismiss
+            /* 是否已被 dismiss */
             dismissed: 0,
 
             _el_: {
@@ -338,7 +341,7 @@
             }
         };
 
-        // 对 Dialog 开放的方法
+        /* 对 Dialog 开放的方法 */
         var methods = [
             [ 'show',       show    ],
             [ 'cancel',     cancel  ],
@@ -350,10 +353,10 @@
 
         _dialogs[ _dialogIdx( stackId ) ] = model;
 
-        // 填充 Dialog 内容
+        /* 填充 Dialog 内容 */
         html && void wrapper.find( '#dialog_body').html( html );
 
-        // 添加到 Dialog 根节点
+        /* 添加到 Dialog 根节点 */
         _dialog_root.append( wrapper );
 
         actions && _setUpActionsIfNecessary( model, actions );
@@ -402,9 +405,9 @@
                 _dialog_mask.hide();
                 _dialog_root.hide();
 
-                //// Reset the opacity prop
-                //el.wrapper.css( { opacity: 1 } );
-                //el.wrapper.hide()
+                /* Reset the opacity prop */
+                /* el.wrapper.css( { opacity: 1 } );
+                el.wrapper.hide() */
             } );
         try {
             return this
@@ -420,13 +423,13 @@
     function _hideWrapperOnly() {
         var el = this._el_;
 
-        // properties, duration, ease, callback, delay
+        /* properties, duration, ease, callback, delay */
         el.wrapper.animate(
             { opacity: .1 },
             $.fx.speeds.fast,
             /*'cubic-bezier(0.4, 0, 0.2, 1)'*/'ease-out',
             function() {
-                // Reset the opacity prop
+                /* Reset the opacity prop */
                 el.wrapper.hide();
                 el.wrapper.css( { opacity: 1 } );
             } );
@@ -443,7 +446,7 @@
     function show() {
         var current = _dialog_current;
 
-        // 清当前 dialog
+        /* 清当前 dialog */
         (current && this != current)
         && void _hideWrapperOnly.call( current );
 
@@ -457,7 +460,7 @@
             _dialog_mask.show(),
                 _dialog_root.show(),
 
-                // properties, duration, ease, callback, delay
+                /* properties, duration, ease, callback, delay */
                 _dialog_mask.animate(
                     'dialog-mask-in',
                     $.fx.speeds.slow,
@@ -466,7 +469,7 @@
 
         el.wrapper.show();
 
-        // Vertical Center
+        /* Vertical Center */
         var margin = (_dialog_root.height() / 2) - (el.wrapper.height() / 2);
         el.wrapper.css( 'margin-top', margin + "px" );
 
@@ -483,17 +486,17 @@
     function dismiss() {
         var el = this._el_;
 
-        // 如果已经操作过 dismiss 则不在执行
+        /* 如果已经操作过 dismiss 则不在执行 */
         if ( el.dismissed )
             return;
 
-        // 设置 dismiss 标识
+        /* 设置 dismiss 标识 */
         el.dismissed = ! 0;
 
-        // 取消
+        /* 取消 */
         this.cancel();
 
-        // 移除 DOM
+        /* 移除 DOM */
         el.wrapper.remove();
 
         delete _dialogs[ _dialogIdx( this.id ) ];
@@ -516,7 +519,7 @@
         return _build( html, cancelable, actions )
     };
 
-    // TODO: auto dismiss
+    /* TODO: auto dismiss */
 }(lairen);
 
 /**
@@ -551,47 +554,48 @@
      */
     var _HASH       = 'hash',
 
-    // 配置项
+        /* 配置项 */
         _ARGS       = 'args',
 
-    // Fragment 的唯一标识
+        /* Fragment 的唯一标识 */
         _ID         = 'id',
 
-    // Window 标题
+        /* Window 标题 */
         _TITLE      = 'title',
 
-    // 在配置中 HTML 与 URL 只选其一, 默认使用 HTML
+        /* 在配置中 HTML 与 URL 只选其一, 默认使用 HTML */
         _HTML       = 'html',
         _URL        = 'url',
 
-    // 依赖项
+        /* 依赖项 */
         _REQUIRES   = 'requires';
 
     var _STACK_INDEX_   = '_stack_idx_',
         _EL_            = '_el_',
         _LAYOUT_        = '_layout_',
-    // 可能的父级 fragment
+        /* 可能的父级 fragment */
         _PARENT_        = '_parent_';
 
-    // 是否支持多实例(Multiple instance)
+    /* 是否支持多实例(Multiple instance) */
     var _MULTIPLE_INSTANCES = 'multitask',
 
-    // 是识是否为派生实例
-    //_IS_DERIVE_         = '_derive_',
+    /* _IS_DERIVE_       = '_derive_', */ /* 是识是否为派生实例 */
 
-    // 派生后的实例 ID
-        _DERIVE_ID_         = '_derive_id_';
 
-    var _ATTACH = 'attach',
-        _CREATE = 'create',
-        _CREATE_VIEW = 'createView',
-        _START = 'start',
-        _RESUME = 'resume',
-        _PAUSE = 'pause',
-        _STOP = 'stop',
-        _DESTROY_VIEW = 'destroyView',
-        _DESTROY = 'destroy',
-        _DETACH = 'detach';
+        _DERIVE_ID_     = '_derive_id_'; /* 派生后的实例 ID */
+
+    var _ATTACH         = 'attach',
+        _CREATE         = 'create',
+        _CREATE_VIEW    = 'createView',
+        _START          = 'start',
+        _RESUME         = 'resume',     /* fragment 被恢复 */
+        _PAUSE          = 'pause',      /* fragment 不可见 */
+        _STOP           = 'stop',
+        _DESTROY_VIEW   = 'destroyView',
+        _DESTROY        = 'destroy',
+        _DETACH         = 'detach';
+
+    var _RELOAD         = 'reload';     /* 重载 */
 
     /**
      * 一个 fragment 从定义到销毁将会执行以下这些过程.
@@ -600,9 +604,11 @@
     var LIFECYCLE_METHODS = [ _ATTACH, _CREATE, _CREATE_VIEW, _START,
         _RESUME, _PAUSE, _STOP, _DESTROY_VIEW, _DESTROY, _DETACH ];
 
-    // Render 对应的 Callback
-    var _PRE_RENDER_HANDLER = "onPreRender",
-        _RENDERED_HANDLER   = "onRendered";
+    /* Render 对应的 Callback */
+    var _PRE_RENDER_HANDLER = 'onPreRender',
+        _RENDERED_HANDLER   = 'onRendered';
+
+    var _ON_RELOAD          = 'onReload';
 
     /**
      * 这个 LIFECYCLE_METHODS 对应的 Callback.
@@ -610,7 +616,8 @@
      */
     var SUPPORTED_HANDLERS = [ "onAttach", "onCreate", "onCreateView", "onStart",
         "onResume", "onPause", "onStop", "onDestroyView", "onDestroy", "onDetach",
-        _PRE_RENDER_HANDLER, _RENDERED_HANDLER ];
+        _PRE_RENDER_HANDLER, _RENDERED_HANDLER,
+        _ON_RELOAD ];
 
     /**
      * LIFECYCLE_METHODS 与 SUPPORTED_HANDLERS 映射关系.
@@ -622,19 +629,19 @@
     } );
 
     var _METHODS = [
-        // 设置 title, 注意不是所有的场景都支持,如: 微信
+        /* 设置 title, 注意不是所有的场景都支持,如: 微信 */
         [ 'setTitle',   setTitle    ],
 
-        // 判别是否可见
+        /* 判别是否可见 */
         [ 'isVisible',  isVisible   ],
 
-        // 获取参数对儿
+        /* 获取参数对儿 */
         [ 'getArgs',    getArgs     ],
 
-        // 填充内空
+        /* 填充内空 */
         [ 'render',     render      ],
 
-        // 获取该 Fragment 的容器
+        /* 获取该 Fragment 的容器 */
         [ 'getContainer', getContainer ]
     ];
 
@@ -707,24 +714,24 @@
      * @returns {*}
      */
     function getFragment(id) {
-        // ui.view#hash
-        // ui.view#343434343
+        /* ui.view#hash
+        ui.view#343434343 */
         return _fragments[ id ]
     }
 
     function _prepare() {
         var html = [];
 
-        // Fragment 的容器
-        // TODO: Progress status
+        /* Fragment 的容器 */
+        /* TODO: Progress status */
         html.push( '<div class="lairen-layout--fragment">' );
         html.push( '</div>' );
 
         _FRAGMENT_TEMPLATE = $( html.join( '' ) );
 
-        // Fragment 根节点
+        /* Fragment 根节点 */
         _fragment_root = $( _idSelector( $lr.ID_FRAGMENT_ROOT ) );
-        // 设置 z-index
+        /* 设置 z-index */
         _fragment_root.css( 'z-index', _alloZIndex( $lr.FRAGMENTS ) )
     }
 
@@ -732,7 +739,7 @@
         _fragment_root || void _prepare()
     }
 
-    // ------------------------------------------------------------------------
+    /* --------------------------------------------------------------------- */
 
     function attach(fragment) {
         var layout = getLayout.call( fragment );
@@ -762,21 +769,36 @@
         _invokeHandler( fragment, _RESUME/*resume*/ )
     }
 
-    // ------------------------------------------------------------------------
+    /* --------------------------------------------------------------------- */
 
-    // NOTE(XCL): This just reference the android fragment state.
-    var INITIALIZING        = 0; // Not yet created.
-    var CREATED             = 1; // Created.
-    var ACTIVITY_CREATED    = 2; // The activity has finished its creation.
-    var STOPPED             = 3; // Fully created, not started.
-    var STARTED             = 4; // Created and started, not resumed.
-    var RESUMED             = 5; // Created started and resumed.
+    function _triggerReload(fragment) {
+        _invokeHandlerWithShareMode( fragment, _ON_RELOAD )
+    }
+
+    /* --------------------------------------------------------------------- */
+
+    /* NOTE(XCL): This just reference the android fragment state. */
+    var INITIALIZING        = 0; /* Not yet created. */
+    var CREATED             = 1; /* Created. */
+    var ACTIVITY_CREATED    = 2; /* The activity has finished its creation. */
+    var STOPPED             = 3; /* Fully created, not started. */
+    var STARTED             = 4; /* Created and started, not resumed. */
+    var RESUMED             = 5; /* Created started and resumed. */
 
     var state               = INITIALIZING;
 
     function _invokeHandler(fragment, fn) {
-        var handler     = METHOD_HANDLERS_MAPPING[ fn/*fn.name*/ ],
-            handlers    = _getHandlers( fragment );
+        var handler  = METHOD_HANDLERS_MAPPING[ fn/*fn.name*/ ],
+            handlers = _getHandlers( fragment );
+
+        handlers
+        && handler in handlers
+        && handlers[ handler ]
+            .apply( fragment, 3 in arguments ? arguments.slice( 2 ) : [] )
+    }
+
+    function _invokeHandlerWithShareMode(fragment, handler) {
+        var handlers = _getHandlers( fragment );
 
         handlers
         && handler in handlers
@@ -794,7 +816,7 @@
         return _handlers[ _getIdForHandlers( fragment ) ]
     }
 
-    // ------------------------------------------------------------------------
+    /* --------------------------------------------------------------------- */
 
     /**
      * 是否强制 Render 哪怕 View 不可见.
@@ -813,22 +835,22 @@
      * { url: url, param: params }
      */
     function render(data) {
-        // TODO: URL 支持参数
+        /* TODO: URL 支持参数 */
         if ( _force_render && ! getContainer.call( this ).parentNode )
             throw new Error( "You haven't call the show method with this fragment!" );
 
-        // 是否能够立刻请求进行 render 操作
+        /* 是否能够立刻请求进行 render 操作 */
         var immediate = data && _HTML in data;
 
-        // Before rendering
+        /* Before rendering */
         immediate && preRender.call( this, data );
 
-        // Rendering
+        /* Rendering */
         immediate
             ? _renderWithHtml.call( this, data )
             : ( _URL in data && _renderWithUrl.call( this, data ) );
 
-        // After rendered
+        /* After rendered */
         immediate && rendered.call( this, data );
     }
 
@@ -847,7 +869,7 @@
     }
 
     function _invokeRenderHandler(fragment, handler) {
-        // 目前针对多实例 fragment 我们采用的是 handler 共享机制
+        /* 目前针对多实例 fragment 我们采用的是 handler 共享机制 */
         var handlers = _getHandlers( fragment );
 
         handlers
@@ -884,7 +906,7 @@
     }
 
     function _finishAndGo(id, args) {
-        // TODO: current -> update hash direct
+        /* TODO: current -> update hash direct */
         _exist( id )
         && (
             args && _overrideArgs( id, args ),
@@ -893,53 +915,53 @@
     }
 
     function _performFinishAndGo() {
-        // hide current
-        // show next
+        /* hide current */
+        /* show next */
 
-        // destroy current
-        // pop current
+        /* destroy current */
+        /* pop current */
 
         var current = _current,
             next    = this,
 
-        // 是否有默认 view(Stack-based)
+        /* 是否有默认 view(Stack-based) */
             isTop   = ! _hasTop(),
-        // 要前往的 fragment
+        /* 要前往的 fragment */
             layout  = next[ _EL_ ][ _LAYOUT_ ];
 
-        // 是否在操作本身
+        /* 是否在操作本身 */
         if ( isTop || current && next == current )
             $lr.throwNiyError();
-        //return;
+        /* return; */
 
         _casStackIfNecessary( current, next );
 
-        // 暂停当前 fragment
+        /* 暂停当前 fragment */
         pause( current );
-        // 隐藏当前 fragment
+        /* 隐藏当前 fragment */
         _hide( current, _FROM_STACK_YES );
 
         layout[ 0 ].parentNode
-        || (
-            attach      ( next ),
+            || (
+                attach      ( next ),
                 create      ( next ),
                 createView  ( next ),
                 start       ( next )
-        );
+            );
 
-        // FIXME(XCL): 不管是否被暂停这里绝对执行恢复操作
+        /* FIXME(XCL): 不管是否被暂停这里绝对执行恢复操作 */
         resume( next );
 
-        // 呈现下一个 fragment
+        /* 呈现下一个 fragment */
         _show( next, _TRANSITION_YES, _FROM_STACK_NO );
 
         try {
-            // 销毁 current
+            /* 销毁 current */
             current && _scheduleDestroy( current );
         } finally {
             _current = next;
 
-            // 更新至 location.hash
+            /* 更新至 location.hash */
             _applyHash( _current )
         }
     }
@@ -988,21 +1010,21 @@
         _performBack()
     }
 
-    // ------------------------------------------------------------------------
+    /* --------------------------------------------------------------------- */
 
     function _renderWithHtml(data) {
-        // To render using the html snippet
+        /* To render using the html snippet */
         /*data && */this[ _EL_ ][ _LAYOUT_ ].html( data[ _HTML ] )
     }
 
     function _renderWithUrl(data) {
-        //if ( ! data )
-        //    return;
+        /* if ( ! data )
+            return; */
 
         var target = this;
 
         $lr.get( data[ _URL ], function(response) {
-            // 填充 HTML 片段
+            /* 填充 HTML 片段 */
             /*target.isVisible()
              && *//*target[ _EL_ ][ _LAYOUT_ ].html( response );*/
             var data = {};
@@ -1013,12 +1035,12 @@
     }
 
     var _applyHash = function(fragment) {
-        // TODO
+        /* TODO */
         _syncHashToBrowser( fragment )
     };
 
     function _syncHashToBrowser(fragment) {
-        // #!id:args
+        /* #!id:args */
         var x = [ _FRAGMENT_HASH_PREFIX, fragment[ _HASH ] ];
 
         fragment[ _ARGS ]
@@ -1034,14 +1056,23 @@
         _exist( id )
         && (
             args && _overrideArgs( id, args ),
-                _performGo.call( getFragment( id ) )
+            _performGo.call( getFragment( id ) )
         )
     }
 
-    // ------------------------------------------------------------------------
+    /**
+     * XXX(XCL): 暂时未实现多实例 reload.
+     * @param id
+     * @private
+     */
+    function _reload(id) {
+        _exist( id ) && _triggerReload( getFragment( id ) )
+    }
+
+    /* --------------------------------------------------------------------- */
 
     function checkRuntime() {
-        // Object.keys && onhashchange && onpopstate && more...
+        /* Object.keys && onhashchange && onpopstate && more... */
     }
 
     function sort(args) {
@@ -1061,7 +1092,7 @@
         return ordered
     }
 
-    // 参考: http://web.archive.org/web/20130703081745/http://www.cogs.susx.ac.uk/courses/dats/notes/html/node114.html
+    /* 参考: http://web.archive.org/web/20130703081745/http://www.cogs.susx.ac.uk/courses/dats/notes/html/node114.html */
     function hash(str) {
         var hash = 0;
 
@@ -1073,7 +1104,7 @@
         for ( idx = 0; idx < str.length; idx++ ) {
             hash = 31 * hash + str.charCodeAt( idx );
 
-            // Convert to 32bit integer
+            /* Convert to 32bit integer */
             hash |= 0;
         }
 
@@ -1081,7 +1112,7 @@
     }
 
     function isSupportMultiInstance(id) {
-        // derive
+        /* derive */
         return _exist( id )
             && !! getFragment( id )[ _MULTIPLE_INSTANCES ]
     }
@@ -1106,7 +1137,6 @@
         }
     }
 
-    //
     function _calculateDeriveKey(id, args) {
         var flattenedArgs = _flattenArgs( args );
 
@@ -1123,57 +1153,57 @@
      */
     var _DERIVE_DELIMITER = "#";
 
-    // ------------------------------------------------------------------------
+    /* --------------------------------------------------------------------- */
 
     function _performGo() {
         var current = _current,
 
-        // 是否有默认 view(Stack-based)
+            /* 是否有默认 view(Stack-based) */
             isTop   = ! _hasTop(),
 
-        // 要前往的 fragment
+            /* 要前往的 fragment */
             next    = this,
 
-        // DOM
+            /* DOM */
             layout  = getLayout.call( next );
 
-        // 是否在操作本身
+        /* 是否在操作本身 */
         if ( current && next == current )
             return;
 
         _casStackIfNecessary( current, next );
 
         ( layout[ 0 ].parentNode && '' != layout.html() )
-        || (
-            attach      ( next ),
+            || (
+                attach      ( next ),
                 create      ( next ),
                 createView  ( next ),
                 start       ( next )
-        );
+            );
 
-        // onVisibilityChanged
-        // 是否被暂停
-        //var paused = ! isShowing( layout );
+        /* onVisibilityChanged */
+        /* 是否被暂停 */
+        /* var paused = ! isShowing( layout ); */
 
-        //_casStackIfNecessary( current, next );
+        /* _casStackIfNecessary( current, next ); */
 
-        // 隐藏当前 fragment
+        /* 隐藏当前 fragment */
         current && ( pause( current), _hide( current, _FROM_STACK_YES ) );
 
-        // FIXME(XCL): 不管是否被暂停这里绝对执行恢复操作
+        /* FIXME(XCL): 不管是否被暂停这里绝对执行恢复操作 */
         /*paused && */resume( next );
 
-        // 呈现下一个 fragment
+        /* 呈现下一个 fragment */
         try {
             _show( next, isTop, _FROM_STACK_NO );
-            // ! paused && _show( this, isTop, 1 );
+            /* ! paused && _show( this, isTop, 1 ); */
         } finally {
-            // 加入 BackStack
+            /* 加入 BackStack */
             current && ! isTop && _addToBackStack( current );
 
             _current = next;
 
-            // 更新至 location.hash
+            /* 更新至 location.hash */
             _applyHash( _current )
         }
     }
@@ -1185,18 +1215,18 @@
         var current = _current;
         var next    = _popBackStack();
 
-        // FIXME:
-        //_casStackIfNecessary( current, next );
+        /* FIXME: */
+        /* _casStackIfNecessary( current, next ); */
 
         pause( current );
-        // 隐藏当前 fragment
+        /* 隐藏当前 fragment */
         _hide( current, _FROM_STACK_NO );
 
         try {
-            // 恢复
+            /* 恢复 */
             resume( next );
 
-            // 呈现下一个 fragment
+            /* 呈现下一个 fragment */
             _show( next, _TRANSITION_YES, _FROM_STACK_YES );
         } finally {
             _current = next;
@@ -1205,13 +1235,13 @@
         }
     }
 
-    // TODO:
-    // finish -> back && destroy
+    /* TODO: */
+    /* finish -> back && destroy */
     function _destroy(id) {
         var current = _current;
         var target  = getFragment( id );
 
-        // TODO: 不允许移除顶级 fragment
+        /* TODO: 不允许移除顶级 fragment */
         if ( current === target ) {
 
         }
@@ -1221,7 +1251,7 @@
         _invokeHandler( target, _DESTROY/*destroy*/ );
         _invokeHandler( target, _DETACH/*detach*/ );
 
-        // DOM 移除
+        /* DOM 移除 */
         target[ _EL_ ][ _LAYOUT_ ].remove();
 
         /*delete _fragments[ id ]*/
@@ -1245,7 +1275,7 @@
 
     }
 
-    // ------------------------------------------------------------------------
+    /* --------------------------------------------------------------------- */
 
     var _TRANSITION_YES = 0,
         _TRANSITION_NO  = 1,
@@ -1261,7 +1291,7 @@
                 ? ''
                 : (fromStack ? 'fragment-pop-enter':'fragment-enter') ) );
 
-        // Show the dom
+        /* Show the dom */
         layout.show();
 
         noTransition
@@ -1279,21 +1309,21 @@
                 ? 'fragment-pop-exit'
                 : 'fragment-exit') );
 
-        // properties, duration, ease, callback, delay
+        /* properties, duration, ease, callback, delay */
         layout.animate(
             fromStack ? 'fragment-pop-exit' : 'fragment-exit',
             $.fx.speeds.slow,
             'cubic-bezier(0.4, 0, 0.2, 1)'/*'linear'*/,
             function() {
-                // Reset the opacity prop
+                /* Reset the opacity prop */
                 layout.hide();
-                //layout.css( { opacity: 1 } );
+                /* layout.css( { opacity: 1 } ); */
             } )
     }
 
-    // ------------------------------------------------------------------------
+    /* --------------------------------------------------------------------- */
 
-    // FIXME: 相同 hash 不同参数不列为一个新的 Back stack record.
+    /* FIXME: 相同 hash 不同参数不列为一个新的 Back stack record. */
     var _backStack = [];
 
     /**
@@ -1345,7 +1375,7 @@
         return _backStack.pop()
     }
 
-    // ------------------------------------------------------------------------
+    /* --------------------------------------------------------------------- */
 
     function pause(fragment) {
         _invokeHandler( fragment, _PAUSE/*pause*/ )
@@ -1367,14 +1397,14 @@
         _invokeHandler( fragment, _DETACH/*detach*/ )
     }
 
-    // ------------------------------------------------------------------------
+    /* --------------------------------------------------------------------- */
 
     function _resolveRequires(requires) {
-        // TODO:
+        /* TODO: */
     }
 
     function _importRequiresIfNecessary(requires) {
-        // TODO:
+        /* TODO: */
     }
 
     function _settleHandlers(id, handlers) {
@@ -1395,43 +1425,43 @@
     function _buildDerive(sourceId, deriveId, args) {
         var derive = _copyByClone( getFragment( sourceId ) );
 
-        // --------------------------------------------------------------------
+        /* ----------------------------------------------------------------- */
 
-        // 对一个 fragment 开放的实例方法
+        /* 对一个 fragment 开放的实例方法 */
         _bindMethods( derive );
 
-        // 派生的标识(用到标识唯一)
+        /* 派生的标识(用到标识唯一) */
         Object.defineProperty(
             derive,
             _DERIVE_ID_,
             { value: deriveId, writable: 0 }
         );
 
-        // 赋于新的 stack index, 实际上就是 z-index
+        /* 赋于新的 stack index, 实际上就是 z-index */
         derive[ _STACK_INDEX_ ] = _alloZIndex( $lr.FRAGMENT );
-        // XXX: DOM 节点, 如果为祖先级实例则该 DOM 只会被用于 clone
+        /* XXX: DOM 节点, 如果为祖先级实例则该 DOM 只会被用于 clone */
         derive[ _EL_ ] = {};
         derive[ _EL_ ][ _LAYOUT_ ] = _FRAGMENT_TEMPLATE.clone();
 
-        //derive[ _EL_ ][ _LAYOUT_ ][ 0 ][ 'id' ] = _fragmentSequenceId(
-        //    derive[ _STACK_INDEX_ ] );
+        /* derive[ _EL_ ][ _LAYOUT_ ][ 0 ][ 'id' ] = _fragmentSequenceId(
+            derive[ _STACK_INDEX_ ] ); */
 
-        // To retain the arguments if present.
+        /* To retain the arguments if present. */
         derive[ _ARGS ] = args;
 
-        // 填充 HTML 片段，如果已指定该字段
+        /* 填充 HTML 片段，如果已指定该字段 */
         if ( _HTML in derive ) {
-            //_invokeRender( derive );
-            //_renderWithHtml.call( derive, { html: derive[ _HTML ] } );
+            /* _invokeRender( derive ); */
+            /* _renderWithHtml.call( derive, { html: derive[ _HTML ] } ); */
         } else if ( _URL in derive ) {
-            //_invokeRender( derive );
-            //_renderWithUrl.call( derive, { url: derive[ _URL ] } );
+            /* _invokeRender( derive ); */
+            /* _renderWithUrl.call( derive, { url: derive[ _URL ] } ); */
         }
 
         try {
             return derive
         } finally {
-            // 将 clone 的 fragment 放入容器
+            /* 将 clone 的 fragment 放入容器 */
             _add( derive );
         }
     }
@@ -1439,25 +1469,25 @@
     function _copyByClone(source) {
         var clone = {};
 
-        // Inherit: 处理依赖项
+        /* Inherit: 处理依赖项 */
 
-        // Inherit: 处置 Handlers
+        /* Inherit: 处置 Handlers */
 
-        // Id 也复制但不使用
+        /* Id 也复制但不使用 */
         _copyIfExist( source, clone, _ID );
 
-        // 标题
+        /* 标题 */
         _copyIfExist( source, clone, _TITLE );
 
-        // 解析后的 hash, lairen.ui.home -> lairen/ui/home
+        /* 解析后的 hash, lairen.ui.home -> lairen/ui/home */
         _copyIfExist( source, clone, _HASH );
 
-        // 是否支持多实例, 如支持多实例则祖先仅终不会被添加至 DOM 中
+        /* 是否支持多实例, 如支持多实例则祖先仅终不会被添加至 DOM 中 */
         _copyIfExist( source, clone, _MULTIPLE_INSTANCES );
 
-        // --------------------------------------------------------------------
+        /* ----------------------------------------------------------------- */
 
-        // HTML 片段或 URL，如果已指定该字段
+        /* HTML 片段或 URL，如果已指定该字段 */
         if ( _HTML in source ) {
             clone[ _HTML ] = source[ _HTML ];
         } else if ( _URL in source ) {
@@ -1479,78 +1509,78 @@
      * @private
      */
     function _build(id, config) {
-        // TODO: validate the view id
+        /* TODO: validate the view id */
         if ( ! isString( id ) )
             throw Error( "Invalid id(" + id + ")" );
 
         if ( $lr.isUndefined( config ) )
             throw Error( "Must be specify the config for " + id )
 
-        // TODO: 延迟初始化
+        /* TODO: 延迟初始化 */
         _ensure();
 
-        // Fragment 如果已经定义过则无需再次定义
+        /* Fragment 如果已经定义过则无需再次定义 */
         var frag = _exist( id ) ? getFragment( id ) : {};
 
-        // 标识是否需要填充默认 fragment
+        /* 标识是否需要填充默认 fragment */
         var hasTop = _hasTop();
 
-        // TODO: 已经存在的是否允许更新
+        /* TODO: 已经存在的是否允许更新 */
         if ( _ID in frag )
             return frag;
 
-        // TODO: 这样会造成祖级元素无法被合理使用
-        // 是否为祖先级实例
+        /* TODO: 这样会造成祖级元素无法被合理使用 */
+        /* 是否为祖先级实例 */
         var isAncestor = _MULTIPLE_INSTANCES in config
             && !! config[ _MULTIPLE_INSTANCES ];
 
-        // 分配一个 idx 实际上就是 z-index
+        /* 分配一个 idx 实际上就是 z-index */
         var stackIdx = _alloZIndex( $lr.FRAGMENT ),
             requires = undefined;
 
-        // 用于容纳 fragment 内容
+        /* 用于容纳 fragment 内容 */
         var layout   = _FRAGMENT_TEMPLATE.clone();
-        //layout[ 0 ][ 'id' ] = _fragmentSequenceId( stackIdx );
+        /* layout[ 0 ][ 'id' ] = _fragmentSequenceId( stackIdx ); */
 
-        // 处理依赖项
+        /* 处理依赖项 */
         isPlainObject( config )
         && _REQUIRES in config
         && ( requires = _resolveRequires( config.requires ) );
 
-        // --------------------------------------------------------------------
+        /* ----------------------------------------------------------------- */
 
-        // 对一个 fragment 开放的实例方法
+        /* 对一个 fragment 开放的实例方法 */
         _bindMethods( frag );
 
-        // 处置 Handlers
+        /* 处置 Handlers */
         _settleHandlers( id, config );
 
-        // 初始化依赖项
+        /* 初始化依赖项 */
         requires && _importRequiresIfNecessary( requires );
 
-        // --------------------------------------------------------------------
+        /* ----------------------------------------------------------------- */
 
-        // Fragment 的 id
+        /* Fragment 的 id */
         frag[ _ID ]             = id;
-        // 叠放次序
+        /* 叠放次序 */
         frag[ _STACK_INDEX_ ]   = stackIdx;
 
-        // XXX: DOM 节点, 如果为祖先级实例则该 DOM 只会被用于 clone
+        /* XXX: DOM 节点, 如果为祖先级实例则该 DOM 只会被用于 clone */
         frag[ _EL_ ]             = {};
         frag[ _EL_ ][ _LAYOUT_ ] = layout;
 
-        // 标题
+        /* 标题 */
         isString( config[ _TITLE ] )
         && (frag[ _TITLE ] = config[ _TITLE ]);
 
-        // 解析后的 hash, lairen.ui.home -> lairen/ui/home
+        /* 解析后的 hash, lairen.ui.home -> lairen/ui/home */
         frag[ _HASH ]       = _makeIdUrlify( id );
 
-        // To retain the arguments if present.
+        /* To retain the arguments if present. */
         _ARGS in config
         && (frag[ _ARGS ] = config[ _ARGS ]);
 
-        // 是否支持多实例, 如支持多实例则祖先仅终不会被添加至 DOM 中
+        /* 是否支持多实例, 如支持多实例则祖先仅终不会被添加至 DOM 中 */
         isAncestor
         && Object.defineProperty(
             frag,
@@ -1558,34 +1588,34 @@
             { value: 1, writable: 0 }
         );
 
-        // --------------------------------------------------------------------
+        /* ----------------------------------------------------------------- */
 
-        // 填充 HTML 片段，如果已指定该字段
-        //if ( ! isAncestor ) {
+        /* 填充 HTML 片段，如果已指定该字段 */
+        /* if ( ! isAncestor ) { */
         if ( _HTML in config ) {
             frag[ _HTML ] = config[ _HTML ];
             _invokeRender( frag, frag );
-            //_renderWithHtml.call( frag, config );
+            /* _renderWithHtml.call( frag, config ); */
         } else if ( _URL in config ) {
             frag[ _URL ] = config[ _URL ];
             _invokeRender( frag, frag );
-            //_renderWithUrl.call( frag, config );
+            /* _renderWithUrl.call( frag, config ); */
         }
-        //}
+        /* } */
 
-        //(config && _HTML in config)
-        //    && isString( config[ _HTML ] )
-        //        && layout.html( config[ _HTML ] );
+        /* (config && _HTML in config)
+              && isString( config[ _HTML ] )
+                  && layout.html( config[ _HTML ] ); */
 
-        // --------------------------------------------------------------------
+        /* ----------------------------------------------------------------- */
 
         try {
             return frag
         } finally {
-            // 将定义的 fragment 放入容器
+            /* 将定义的 fragment 放入容器 */
             _add( frag );
 
-            // 呈现默认 View 如果没有有效的 view id 被指定
+            /* 呈现默认 View 如果没有有效的 view id 被指定 */
             ! hasTop && _setupTopIfMatch( frag )
         }
     }
@@ -1677,14 +1707,14 @@
 
         var result  = {},
 
-        // 统计条数
+            /* 统计条数 */
             counter = 0,
 
-            array = rawHash
+            array   = rawHash
                 .substr( 1 + rawHash.indexOf( _ARG_DELIMITER ) )
                 .split( '&' ),
 
-        // 索引, 参数对儿, 参数名, 参数, 数组
+            /* 索引, 参数对儿, 参数名, 参数, 数组 */
             idx, pair, key, value, set;
 
         for ( idx in array ) {
@@ -1721,7 +1751,7 @@
     function _argsUrlify(args) {
         var result = [];
 
-        // 参数名, 值, 数组, 索引
+        /* 参数名, 值, 数组, 索引 */
         var key, value, set, idx;
 
         for ( key in args ) {
@@ -1798,16 +1828,16 @@
 
         originHash === fragment[ _HASH ]
         && (
-            // 更新 args
+            /* 更新 args */
             _overrideArgs( fragment[ _ID ], originArgs ),
                 _go( fragment[ _ID ] )
         )
     }
 
-    // ------------------------------------------------------------------------
+    /* --------------------------------------------------------------------- */
 
     $lr.fragment = function(id, config) {
-        // TODO: alias, short
+        /* TODO: alias, short */
         return _build( id, config )
     };
 
@@ -1877,6 +1907,12 @@
          *              // 这是 destroy 的最后一步环节, 将容器从 DOM 中移出
          *           },
          *
+         *           // -------------- 以下为 reload 对应的 callback ------------
+         *
+         *           onReload: function() {
+         *              // 你可以这里实现 reload 操作
+         *           },
+         *
          *           // -------------- 以下为 Render 对应的 callback ------------
          *
          *           onPreRender: function(container) {
@@ -1938,16 +1974,20 @@
         back:       back,
 
         /**
+         * 通知 fragment 更新.
+         *
+         * @param id
+         * @param args
+         */
+        reload:     _reload,
+
+        /**
          * 可以向 fragment 传递一些参数用来更新.
          * @param id
          * @param params
          */
         update:     function(id, args) {
             // TODO:
-            $lr.throwNiyError();
-        },
-
-        reload:     function(id, args) {
             $lr.throwNiyError();
         },
 
@@ -1972,32 +2012,36 @@
         destroy:    $lr.throwNiyError
     };
 
-    // ------------------------------------------------------------------------
+    /* --------------------------------------------------------------------- */
 
-    // BUG(s):
-    // $lairen.get -> error
-    // finish 销毁过晚
-    // 快速点击 UI 将不可见
+    /**
+     * BUG(s):
+     * $lairen.get -> error
+     * finish 销毁过晚
+     * 快速点击 UI 将不可见
+     */
 
-    // TODO:
-    // handling unknown id
-    // put => get => remove
-    // onPreRender => onRendered
-    // progress status
-    // root color
-    // parent -> back
-    // url with args
-    // clearContentOnLeave
-    // destroyOnLeave
-    // open fragment
-    // show fragment
-    // reveal fragment
-    // render fragment
-    // present fragment
-    // appear fragment
-    // reload with args
-    // setTitle
-    // detectHashChange => onHashChange
+    /**
+     * TODO:
+     * handling unknown id
+     * put => get => remove
+     * onPreRender => onRendered
+     * progress status
+     * root color
+     * parent -> back
+     * url with args
+     * clearContentOnLeave
+     * destroyOnLeave
+     * open fragment
+     * show fragment
+     * reveal fragment
+     * render fragment
+     * present fragment
+     * appear fragment
+     * reload with args
+     * setTitle
+     * detectHashChange => onHashChange
+     */
 
     /**
      * 依赖该事件进行 fragment 导向
@@ -2024,26 +2068,26 @@
             args: _current[ _ARGS ] }
             : null;
 
-        // 当前 Browser 中的 hash
+        /* 当前 Browser 中的 hash */
         var hashNow = location.hash;
 
-        // 是否为 page hash
+        /* 是否为 page hash */
         _isViewHash( hashNow )
         && _handleHashChange( oldHash, _resolveHash( hashNow ) )
     };
 
-    // TODO: To detect the history back act.
+    /* TODO: To detect the history back act. */
     var _handleHashChange = function(oldHash, newHash) {
         $lr.dev && console.log( 'onHashChanged ' + JSON.stringify( oldHash )
             + ' ' + JSON.stringify( newHash ) + ' ' + new Date().getTime() );
 
-        // 是否 hash 真的需要更新
+        /* 是否 hash 真的需要更新 */
         ! _isSameHash( oldHash, newHash )
         && _triggerGoNext( newHash )
     };
 
-    // _triggerLoadFragment
-    // triggerBackward
+    /* _triggerLoadFragment */
+    /* triggerBackward */
     /**
      * 前往指定的 fragment.
      * @param hash
@@ -2060,23 +2104,27 @@
     };
 
     function _goNext(id, args, fromUser) {
-        // 更新 args
+        /* 更新 args */
         _overrideArgs( id, args );
 
-        // 前往该 view
+        /* 前往该 view */
         _go( id )
     }
 
     function _goNextWithMultiMode(id, args, fromUser) {
-        // Step 1: 是否支持多实例
-        // Step 2: 如果支持看实例是否被创建
-        // Step 3: 前往实例
+        /**
+         * Step 1: 是否支持多实例
+         * Step 2: 如果支持看实例是否被创建
+         * Step 3: 前往实例
+         */
 
-        // 对于多实例 fragment 我们使用在其基本 id 之上加 args 的 hashcode 用于区分，
-        // 如：ui.view#123456
+        /**
+         * 对于多实例 fragment 我们使用在其基本 id 之上加 args 的 hashcode 用于区分，
+         * 如：ui.view#123456
+         */
         var deriveId = _calculateDeriveKey( id, args );
 
-        // XXX: 实际上我们是依赖 args 的不同来维护多实例，但这并不意味着允许 args 为 null
+        /* XXX: 实际上我们是依赖 args 的不同来维护多实例，但这并不意味着允许 args 为 null */
         if ( id == deriveId ) {
             _goNext( id, args, fromUser );
             return;
@@ -2087,17 +2135,16 @@
         _go( deriveId );
     }
 
-    // TODO(XCL): addEventListener
+    /* TODO(XCL): addEventListener */
     _LISTENER_HASH_CHANGE in win && (window[ _LISTENER_HASH_CHANGE ] =
         _onHashChanged);
 
-    // FIXME(XCL): Trying to prevent the user backward operation
-
+    /* FIXME(XCL): Trying to prevent the user backward operation */
     if ( 'onpopstate' in window ) {
         history.pushState( null, null, location.href );
 
         window.addEventListener( 'popstate', function () {
-            // FIXME: To override the history state
+            /* FIXME: To override the history state */
             history.pushState( null, null, location.href )
         } )
     }
