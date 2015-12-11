@@ -67,49 +67,109 @@
 }
 /*------------------------------------------------------*/
 @-webkit-keyframes fragment-enter {
-    from { transform: translateX(100%)/*; opacity: .1*/ }
-    to { transform: translateX(0)/*; opacity: 1*/ }
+    from {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+        transform: translateX(100%)/*; opacity: .1*/ }
+    to {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+        transform: translateX(0)/*; opacity: 1*/ }
 }
 @keyframes fragment-enter {
-    from { transform: translateX(100%)/*; opacity: .1*/ }
-    to { transform: translateX(0)/*; opacity: 1*/ }
+    from {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+        transform: translateX(100%)/*; opacity: .1*/ }
+    to {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+        transform: translateX(0)/*; opacity: 1*/ }
 }
 @-webkit-keyframes fragment-pop-exit {
-    from { transform: translateX(0)/*; opacity: .8*/ }
-    to { transform: translateX(-20%)/*; opacity: 1*/ }
+    from {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+        transform: translateX(0)/*; opacity: .8*/ }
+    to {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+        transform: translateX(-20%)/*; opacity: 1*/ }
 }
 @keyframes fragment-pop-exit {
-    from { transform: translateX(0)/*; opacity: .8*/ }
-    to { transform: translateX(-20%)/*; opacity: 1*/ }
+    from {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+        transform: translateX(0)/*; opacity: .8*/ }
+    to {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+        transform: translateX(-20%)/*; opacity: 1*/ }
 }
 @-webkit-keyframes fragment-pop-enter {
-    from { transform: translateX(-20%)/*; opacity: 1*/ }
-    to { transform: translateX(0)/*; opacity: .8*/ }
+    from {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+        transform: translateX(-20%)/*; opacity: 1*/ }
+    to {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+        transform: translateX(0)/*; opacity: .8*/ }
 }
 @keyframes fragment-pop-enter {
-    from { transform: translateX(-20%)/*; opacity: 1*/ }
-    to { transform: translateX(0)/*; opacity: .8*/ }
+    from {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+        transform: translateX(-20%)/*; opacity: 1*/ }
+    to {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+        transform: translateX(0)/*; opacity: .8*/ }
 }
 @-webkit-keyframes fragment-exit {
-    from { transform: translateX(0)/*; opacity: 1*/ }
-    to { transform: translateX(100%)/*; opacity: .8*/ }
+    from {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+        transform: translateX(0)/*; opacity: 1*/ }
+    to {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+        transform: translateX(100%)/*; opacity: .8*/ }
 }
 @keyframes fragment-exit {
-    from { transform: translateX(0)/*; opacity: 1*/ }
-    to { transform: translateX(100%)/*; opacity: .8*/ }
+    from {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+        transform: translateX(0)/*; opacity: 1*/ }
+    to {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+        transform: translateX(100%)/*; opacity: .8*/ }
 }
 
 @-webkit-keyframes dialog-mask-in {
-    from { background-color: rgba(0, 0, 0, .0) }
+    from {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+        background-color: rgba(0, 0, 0, .0) }
     /*to { background-color: rgba(255, 255, 255, 0) }*/
-    to { background-color: rgba(0, 0, 0, .4) }
+    to {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+        background-color: rgba(0, 0, 0, .4) }
     /*to { background-color: rgba(255, 255, 255, .4) }*/
 }
 @-webkit-keyframes dialog-mask-out {
-    from { background-color: rgba(0, 0, 0, .4) }
+    from {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+        background-color: rgba(0, 0, 0, .4) }
     /*to { background-color: rgba(255, 255, 255, .4) }*/
     /*to { background-color: rgba(255, 255, 255, 0) }*/
-    to { background-color: rgba(0, 0, 0, .0) }
+    to {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+        background-color: rgba(0, 0, 0, .0) }
 }
 /*------------------------------------------------------*/
 
