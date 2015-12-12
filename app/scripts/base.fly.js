@@ -538,7 +538,9 @@
         _idSelector     = $lr._idSelector,
         isShowing       = $lr._isShowing,
         isString        = $lr.isString,
-        isPlainObject   = $.isPlainObject;
+        isPlainObject   = $.isPlainObject,
+
+        historyApiSupported = 'onpopstate' in win;
 
     /**
      * 以 #! 打头的 hash 可识别为我们的 fragment 导向.
@@ -924,9 +926,9 @@
         var current = _current,
             next    = this,
 
-        /* 是否有默认 view(Stack-based) */
+            /* 是否有默认 view(Stack-based) */
             isTop   = ! _hasTop(),
-        /* 要前往的 fragment */
+            /* 要前往的 fragment */
             layout  = next[ _EL_ ][ _LAYOUT_ ];
 
         /* 是否在操作本身 */
@@ -1007,7 +1009,9 @@
      * 请求进行后退操作, 如果 BackStack 有可用的记录.
      */
     function back() {
-        _performBack()
+        /* 暂时作用 History API */
+        history.back();
+        /*_performBack()*/
     }
 
     /* --------------------------------------------------------------------- */
@@ -1039,17 +1043,22 @@
         _syncHashToBrowser( fragment )
     };
 
-    function _syncHashToBrowser(fragment) {
+    /* 构建一个 hash 串用于更新至浏览器 */
+    function _buildHashWithBrowser(fragment) {
         /* #!id:args */
         var x = [ _FRAGMENT_HASH_PREFIX, fragment[ _HASH ] ];
 
         fragment[ _ARGS ]
-        && (
-            x.push( _ARG_DELIMITER ),
+            && (
+                x.push( _ARG_DELIMITER ),
                 x.push( _argsUrlify( fragment[ _ARGS ] ) )
-        );
+            );
 
-        location.hash = x.join( '' )
+        return x.join( '' )
+    }
+
+    function _syncHashToBrowser(fragment) {
+        location.hash = _buildHashWithBrowser(fragment)
     }
 
     function _go(id, args) {
@@ -1061,7 +1070,7 @@
     }
 
     /**
-     * XXX(XCL): 暂时未实现多实例 reload.
+     * TODO(XCL): 暂时未实现多实例 reload.
      * @param id
      * @private
      */
@@ -1196,16 +1205,46 @@
         /* 呈现下一个 fragment */
         try {
             _show( next, isTop, _FROM_STACK_NO );
-            /* ! paused && _show( this, isTop, 1 ); */
         } finally {
             /* 加入 BackStack */
-            current && ! isTop && _addToBackStack( current );
+            if ( current && ! isTop ) {
+                _addToBackStack( current );
+
+                historyApiSupported && _setUpCurrentState( next )
+            } else {
+                historyApiSupported && _setUpInitialState( next )
+            }
 
             _current = next;
 
-            /* 更新至 location.hash */
-            _applyHash( _current )
+            if ( historyApiSupported ) {
+
+            } else {
+                /* 更新至 location.hash */
+                _applyHash(_current)
+            }
         }
+    }
+
+    function _setUpCurrentState(target) {
+        _pushState(
+            _newState(),
+            target[ _TITLE ],
+            _buildHashWithBrowser( target ) );
+
+        _currentState = history.state;
+    }
+
+    function _setUpInitialState(/* fragment */initial) {
+        var state = {};
+            state[_IDX] = _FIRST_STATE;
+
+        history.replaceState(
+            state,
+            initial[ _TITLE ],
+            _buildHashWithBrowser( initial ) );
+
+        _currentState = history.state;
     }
 
     function _performBack() {
@@ -1231,7 +1270,12 @@
         } finally {
             _current = next;
 
-            _applyHash( _current )
+            /* 支持 history 则不需要手动更新 hash */
+            if ( historyApiSupported ) {
+
+            } else {
+                _applyHash( _current )
+            }
         }
     }
 
@@ -1334,6 +1378,10 @@
      */
     function _addToBackStack(fragment) {
         return _push( fragment )
+    }
+
+    function _pushState(state, title, hash) {
+        history.pushState( state, title, hash )
     }
 
     function _casStackIfNecessary(b, f) {
@@ -2043,6 +2091,63 @@
      * detectHashChange => onHashChange
      */
 
+    /* --------------------------------------------------------------------- */
+
+    function processState() {
+
+    }
+
+    var _IDX = _STACK_INDEX_;
+
+    var _FIRST_STATE = 0;
+
+    var _currentState = {};
+        _currentState[ _IDX ] = _FIRST_STATE;
+
+    function _newState() {
+        var state = {};
+
+            state[ _IDX ] = _backStack.length - 1;
+
+        return state
+    }
+
+    function _isBackward(event) {
+        var current = _currentState;
+
+        return _FIRST_STATE == current[ _IDX ]
+            || event.state[ _IDX ] < current[ _IDX ];
+    }
+
+    function _handleBackward(event) {
+        var idx = event.state[ _IDX ];
+
+        idx in _backStack && _performBack();
+    }
+
+    /* XXX(XCL): 是否应该支持 forward 操作 */
+    function _handleForward(event) {
+
+    }
+
+    function _checkStateEvent(/* PopStateEvent */event) {
+        return event['state'] && _IDX in event.state;
+    }
+
+    /* 如果跳转到其它页面当后退至当前页面则可能 stack 丢失(RELOAD) */
+    var _onPopStateHandler = function(event) {
+        $lr.dev && console.log( 'history entries: ' + history.length );
+
+        if ( ! _checkStateEvent( event ) )
+            return;
+
+        _isBackward( event )
+            ? _handleBackward( event )
+            : _handleForward( event );
+    };
+
+    /* --------------------------------------------------------------------- */
+
     /**
      * 依赖该事件进行 fragment 导向
      * @type {string}
@@ -2065,7 +2170,7 @@
     var _onHashChanged = function() {
         var oldHash = _current
             ? { hash: _current[ _HASH ],
-            args: _current[ _ARGS ] }
+                args: _current[ _ARGS ] }
             : null;
 
         /* 当前 Browser 中的 hash */
@@ -2073,7 +2178,7 @@
 
         /* 是否为 page hash */
         _isViewHash( hashNow )
-        && _handleHashChange( oldHash, _resolveHash( hashNow ) )
+            && _handleHashChange( oldHash, _resolveHash( hashNow ) )
     };
 
     /* TODO: To detect the history back act. */
@@ -2082,8 +2187,9 @@
             + ' ' + JSON.stringify( newHash ) + ' ' + new Date().getTime() );
 
         /* 是否 hash 真的需要更新 */
-        ! _isSameHash( oldHash, newHash )
-        && _triggerGoNext( newHash )
+        /* 暂时使用 History API */
+        /*! _isSameHash( oldHash, newHash )
+            && _triggerGoNext( newHash )*/
     };
 
     /* _triggerLoadFragment */
@@ -2140,12 +2246,16 @@
         _onHashChanged);
 
     /* FIXME(XCL): Trying to prevent the user backward operation */
-    if ( 'onpopstate' in window ) {
-        history.pushState( null, null, location.href );
+    //if ( 'onpopstate' in window ) {
+    //    history.pushState( null, null, location.href );
+    //
+    //    window.addEventListener( 'popstate', function () {
+    //        /* FIXME: To override the history state */
+    //        history.pushState( null, null, location.href )
+    //    } )
+    //}
 
-        window.addEventListener( 'popstate', function () {
-            /* FIXME: To override the history state */
-            history.pushState( null, null, location.href )
-        } )
-    }
+    /* Manipulating the browser history */
+    historyApiSupported
+        && window.addEventListener( 'popstate', _onPopStateHandler );
 }(lairen);
