@@ -2093,15 +2093,19 @@
 
     /* --------------------------------------------------------------------- */
 
-    function processState() {
+    function _processState() {
 
     }
 
-    var _IDX = _STACK_INDEX_;
+    var _LISTEN_WINDOW_POP_STATE = 'popstate';
 
-    var _FIRST_STATE = 0;
+    var _IDX            = _STACK_INDEX_;
 
-    var _currentState = {};
+    /* 首次加载的 view */
+    var _FIRST_STATE    = 0;
+
+    /* 当前状态 */
+    var _currentState   = {};
         _currentState[ _IDX ] = _FIRST_STATE;
 
     function _newState() {
@@ -2144,6 +2148,18 @@
         _isBackward( event )
             ? _handleBackward( event )
             : _handleForward( event );
+
+        /**
+         * FIXME(XCL): Trying to prevent the user backward operation
+         * if ( 'onpopstate' in window ) {
+         *    history.pushState( null, null, location.href );
+         *
+         *    window.addEventListener( 'popstate', function () {
+         *        FIXME: To override the history state
+         *        history.pushState( null, null, location.href )
+         *    } )
+         *  }
+         */
     };
 
     /* --------------------------------------------------------------------- */
@@ -2245,17 +2261,8 @@
     _LISTENER_HASH_CHANGE in win && (window[ _LISTENER_HASH_CHANGE ] =
         _onHashChanged);
 
-    /* FIXME(XCL): Trying to prevent the user backward operation */
-    //if ( 'onpopstate' in window ) {
-    //    history.pushState( null, null, location.href );
-    //
-    //    window.addEventListener( 'popstate', function () {
-    //        /* FIXME: To override the history state */
-    //        history.pushState( null, null, location.href )
-    //    } )
-    //}
-
     /* Manipulating the browser history */
     historyApiSupported
-        && window.addEventListener( 'popstate', _onPopStateHandler );
+        && window.addEventListener( _LISTEN_WINDOW_POP_STATE,
+        _onPopStateHandler );
 }(lairen);
