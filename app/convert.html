@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Untitled</title>
+    <script type="text/javascript" charset="utf-8"
+            src="libs/zepto/zepto.js?1.1.6"></script>
+    <script type="text/javascript" charset="utf-8"
+            src="libs/zepto/fx.js?1.1.6"></script>
+
+    <script type="text/javascript" charset="utf-8"
+            src="libs/mdl/material.js?1.0.5"></script>
+    <link rel="stylesheet" href="libs/mdl/material.css?1.0.5">
+
+
+    <link rel="stylesheet" href="styles/base.css">
+    <!--<script type="text/javascript" charset="utf-8"
+            src="scripts/base.js?2"></script>-->
+    <!--<script type="text/javascript" charset="utf-8"
+            src="scripts/base.fly.js?3"></script>-->
+
+</head>
+<body>
+<div class="starter">
+    <button id="action" style="width: 100%; padding: 16px; margin-bottom: 16px; margin-top: 16px">Convert now</button>
+</div>
+<div>
+    <textarea id="input" style="width: 48%" rows="40"></textarea>
+    <textarea id="output" style="width: 48%; float: right" rows="40" readonly></textarea>
+</div>
+
+<script defer>
+    var input = document.getElementById( 'input' );
+    var output = document.getElementById( 'output' );
+    var action = document.getElementById( 'action' );
+
+    action.onclick = function() {
+        var rows = input.value.split( '\n' );
+        var buffer = [];
+
+        for ( idx in rows ) {
+            console.log( 'idx ' + idx + ' ' + rows[ idx ] + ' ' + (!!rows[idx]) );
+            if ( rows[idx] ) {
+                buffer.push( "'" + rows[idx].trim() + "'" + (idx < rows.length ? ' +' : '') );
+            }
+        }
+
+        /* 如果量后一行为空则移除 + */
+        if ( ! rows[ rows - 1 ] ) {
+            var last_line = buffer[ buffer.length - 1 ];
+            var truncate = last_line.substring( 0, last_line.length - 1 );
+            buffer[ buffer.length - 1 ] = truncate;
+        }
+
+        output.value = buffer.join( '\n' );
+    };
+</script>
+</body>
+</html>
