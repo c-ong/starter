@@ -33,7 +33,7 @@
 
 #dialog-mask, .lairen-layout--fragment {
     /*http://stackoverflow.com/questions/12643240/improving-css3-transition-performance*/
-    /*will-change: transform;*/
+    will-change: transform;
     /*-webkit-transform: translate3d(0, 0, 0);*/
     /*transform: translate3d(0, 0, 0);*/
 }
