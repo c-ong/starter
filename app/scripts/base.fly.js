@@ -86,7 +86,7 @@
         win:            win,
 
         /* 是否为开发模式 */
-        dev:            0,
+        dev:            1,
 
         /* 用于判断类型的函数 */
         isUndefined:    isUndefined,
@@ -1070,11 +1070,14 @@
         location.hash = _buildHashWithBrowser(fragment)
     }
 
-    function _go(id, args) {
+    function _go(id, args, from_uri) {
         _exist( id )
         && (
-            args && _overrideArgs( id, args ),
-            _performGo.call( getFragment( id ) )
+            isPlainObject( args )
+                ? _overrideArgs( id, args )
+                : from_uri = args,
+
+            _performGo.call( getFragment( id ), from_uri )
         )
     }
 
@@ -1173,7 +1176,13 @@
 
     /* --------------------------------------------------------------------- */
 
-    function _performGo() {
+    /**
+     * 执行 Go 操作.
+     *
+     * @param from_uri 默认是通过 $fragment.go 来调用.
+     * @private
+     */
+    function _performGo(from_uri) {
         var current = _current,
 
             /* 是否有默认 view(Stack-based) */
@@ -1200,8 +1209,6 @@
             );
 
         /* onVisibilityChanged */
-        /* 是否被暂停 */
-        /* var paused = ! isShowing( layout ); */
 
         /* _casStackIfNecessary( current, next ); */
 
@@ -1209,19 +1216,19 @@
         current && ( pause( current), _hide( current, _FROM_STACK_YES ) );
 
         /* FIXME(XCL): 不管是否被暂停这里绝对执行恢复操作 */
-        /*paused && */resume( next );
+        resume( next );
 
         /* 呈现下一个 fragment */
         try {
-            _show( next, isTop, _FROM_STACK_NO );
+            _show( next, isTop, _FROM_STACK_NO )
         } finally {
             /* 加入 BackStack */
             if ( current && ! isTop ) {
                 _addToBackStack( current );
 
-                historyApiSupported && _setUpCurrentState( next )
+                historyApiSupported && _setupCurrentState( next, from_uri )
             } else {
-                historyApiSupported && _setUpInitialState( next )
+                historyApiSupported && _setupInitialState( next, from_uri )
             }
 
             _current = next;
@@ -1230,21 +1237,27 @@
 
             } else {
                 /* 更新至 location.hash */
-                _applyHash(_current)
+                _applyHash( _current )
             }
         }
     }
 
-    function _setUpCurrentState(target) {
-        _pushState(
-            _newState(),
-            target[ _TITLE ],
-            _buildHashWithBrowser( target ) );
+    function _setupCurrentState(target, from_uri) {
+        var state = _newState(),
+            title = target[ _TITLE ],
+            hash = _buildHashWithBrowser( target );
 
-        _currentState = history.state;
+        console.log( '### setupCurrentState ' + !! from_uri );
+
+        if ( from_uri )
+            history.replaceState(state, title, hash);
+        else
+            _pushState( state, title, hash );
+
+         _currentState = history.state;
     }
 
-    function _setUpInitialState(/* fragment */initial) {
+    function _setupInitialState(/* fragment */initial, from_uri) {
         var state = {};
             state[_IDX] = _FIRST_STATE;
 
@@ -2192,6 +2205,10 @@
      * @private
      */
     var _onHashChanged = function() {
+        /*$lr.dev && console.log( 'onHashChange::cs -> ' + JSON.stringify( _currentState )
+            + ' ls -> ' + JSON.stringify( _detect_backward_for_uri )
+            + ' ' + new Date().getTime() );*/
+
         var oldHash = _current
             ? { hash: _current[ _HASH ],
                 args: _current[ _ARGS ] }
@@ -2205,6 +2222,8 @@
             && _handleHashChange( oldHash, _resolveHash( hashNow ) )
     };
 
+    var _detect_backward_for_uri = undefined;
+
     /* TODO: To detect the history back act. */
     var _handleHashChange = function(oldHash, newHash) {
         $lr.dev && console.log( 'onHashChanged ' + JSON.stringify( oldHash )
@@ -2212,8 +2231,10 @@
 
         /* 是否 hash 真的需要更新 */
         /* 暂时使用 History API */
-        /*! _isSameHash( oldHash, newHash )
-            && _triggerGoNext( newHash )*/
+        if ( ! _isSameHash( oldHash, newHash ) ) {
+            _triggerGoNext( newHash, 1, 1 );
+            /*_detect_backward_for_uri = _currentState;*/
+        }
     };
 
     /* _triggerLoadFragment */
@@ -2221,27 +2242,28 @@
     /**
      * 前往指定的 fragment.
      * @param hash
-     * @param fromUser 是否来自用户的形为
+     * @param from_user 是否来自用户的形为
+     * @param from_uri
      * @private
      */
-    var _triggerGoNext = function(hash, fromUser) {
+    var _triggerGoNext = function(hash, from_user, from_uri) {
         var id = _makeIdentify( hash[ _HASH ] );
 
         if ( isSupportMultiInstance( id ) )
-            _goNextWithMultiMode( id, hash[ _ARGS ], fromUser );
+            _goNextWithMultiMode( id, hash[ _ARGS ], from_user, from_uri );
         else
-            _goNext( id, hash[ _ARGS ], fromUser );
+            _goNext( id, hash[ _ARGS ], from_user, from_uri );
     };
 
-    function _goNext(id, args, fromUser) {
+    function _goNext(id, args, from_user, from_uri) {
         /* 更新 args */
         _overrideArgs( id, args );
 
         /* 前往该 view */
-        _go( id )
+        _go( id, from_uri )
     }
 
-    function _goNextWithMultiMode(id, args, fromUser) {
+    function _goNextWithMultiMode(id, args, from_user, from_uri) {
         /**
          * Step 1: 是否支持多实例
          * Step 2: 如果支持看实例是否被创建
@@ -2256,18 +2278,18 @@
 
         /* XXX: 实际上我们是依赖 args 的不同来维护多实例，但这并不意味着允许 args 为 null */
         if ( id == deriveId ) {
-            _goNext( id, args, fromUser );
+            _goNext( id, args, from_user, from_uri );
             return;
         }
 
         _exist( deriveId ) || _buildDerive( id, deriveId, args );
 
-        _go( deriveId );
+        _go( deriveId, from_uri );
     }
 
     /* TODO(XCL): addEventListener */
-    _LISTENER_HASH_CHANGE in win && (window[ _LISTENER_HASH_CHANGE ] =
-        _onHashChanged);
+    _LISTENER_HASH_CHANGE in win && ( window[ _LISTENER_HASH_CHANGE ] =
+        _onHashChanged );
 
     /* Manipulating the browser history */
     historyApiSupported

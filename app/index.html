@@ -58,14 +58,16 @@
 
         '<button onclick="x.show()">Show dialog</button>' +
         '<button onclick="x.cancel()">Cancel dialog</button>' +
-        '<button onclick="x.dismiss()">Dismiss dialog</button></div>',
+        '<button onclick="x.dismiss()">Dismiss dialog</button>' +
+        '<div style="padding: 16px;"><a href="#!view.about">Uri navigation(About)</a></div>' +
+        '</div>',
 
         onStart: function () {
-            console.log('onStart')
+//            console.log('onStart')
         },
 
         onResume: function () {
-            console.log('onResume ' + JSON.stringify(this.getArgs()))
+//            console.log('onResume ' + JSON.stringify(this.getArgs()))
         }
     };
     // 定义一个 fragment
@@ -80,15 +82,16 @@
                 // 可以通过该字段来指定默认内容也可以调用 render 方法来填充内容
                 html: '<div id="starter"><div style="padding: 16px 0;">View 后退使用演示</div>' +
                 '<button onclick="$fragment.back()">后退 <<-</button>' +
-                '<button onclick="$fragment.go(\'login\')">加载并呈现 Login UI ->></button></div>',
+                '<button onclick="$fragment.go(\'login\')">加载并呈现 Login UI ->></button>' +
+                '</div>',
 
                 onStart: function () {
-                    console.log('onStart')
+//                    console.log('onStart')
                 },
 
                 onResume: function () {
-                    this.getArgs()['key'];
-                    console.log('onResume ' + JSON.stringify(this.getArgs()))
+//                    this.getArgs()['key'];
+//                    console.log('onResume ' + JSON.stringify(this.getArgs()))
                 }
             });
 
@@ -103,11 +106,11 @@
         },
 
         onStart: function () {
-            console.log('onStart')
+//            console.log('onStart')
         },
 
         onResume: function () {
-            console.log('onResume')
+//            console.log('onResume')
         },
 
         // ----------------------- 上下为对应的 Callback ------------------------

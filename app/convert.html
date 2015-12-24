@@ -40,7 +40,7 @@
         var buffer = [];
 
         for ( idx in rows ) {
-            console.log( 'idx ' + idx + ' ' + rows[ idx ] + ' ' + (!!rows[idx]) );
+            /*console.log( 'idx ' + idx + ' ' + rows[ idx ] + ' ' + (!!rows[idx]) );*/
             if ( rows[idx] ) {
                 buffer.push( "'" + rows[idx].trim() + "'" + (idx < rows.length ? ' +' : '') );
             }
