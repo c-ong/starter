@@ -1,4 +1,41 @@
 /* Used for the first fragment */
+html {
+    font-size: 20px !important;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    margin: 0;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    font-family: "Helvetica Neue", Helvetica, sans-serif;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #3d4145;
+    background: #eeeeee;
+    overflow: hidden;
+}
+
+.fragment-scroller {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.fragment-scroller .scroller-inner {
+    box-sizing: border-box;
+    border-top: 1px solid transparent;
+    margin-top: -1px;
+    padding-bottom: 0.5rem;
+}
+
 #starter {
     background-color: #f2f2f2;
     /*background-color: #fafafa;*/
@@ -22,40 +59,34 @@
 
 /*------------------------------------------------*/
 
-#lairen-viewport {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
+#lairen_viewport, #lairen_fragments, .lairen-layout--fragment {
 }
 
-#dialog-mask, .lairen-layout--fragment {
+#dialog_mask, .lairen-layout--fragment {
     /*http://stackoverflow.com/questions/12643240/improving-css3-transition-performance*/
     /*will-change: transform;*/
     /*-webkit-transform: translate3d(0, 0, 0);*/
     /*transform: translate3d(0, 0, 0);*/
 }
 
-#lairen-fragments {
-    position: relative;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-}
-
 .lairen-layout--fragment {
-    display: none;
+    overflow: hidden;
+
+    box-sizing: border-box;
     position: absolute;
-    top: 0;
     left: 0;
+    top: 0;
     width: 100%;
     height: 100%;
+
+    right: 0;
+    bottom: 0;
+
+    display: none;
     background-color: #f2f2f2;
 }
 
-#lairen-dialog {
+#lairen_dialog {
     position: fixed;
     left: 0;
     top: 0;
@@ -64,7 +95,7 @@
     background-color: rgba( 0, 0, 0, 0.2 );
 }
 
-#dialog-mask {
+#dialog_mask {
     /*position: fixed;*/
     top: 0;
     width: 100%;
@@ -78,98 +109,98 @@
 @-webkit-keyframes fragment-enter {
     from {
         will-change: transform;
-        -webkit-transform: translate3d(0, 0, 0);
-        transform: translate3d(0, 0, 0);
-        transform: translateX(100%)/*; opacity: .1*/ }
+        -webkit-transform: translate3d(100%, 0, 0);
+        transform: translate3d(100%, 0, 0);
+        /*; opacity: .1*/ }
     to {
         will-change: transform;
         -webkit-transform: translate3d(0, 0, 0);
         transform: translate3d(0, 0, 0);
-        transform: translateX(0)/*; opacity: 1*/ }
+        /*; opacity: 1*/ }
 }
 @keyframes fragment-enter {
     from {
         will-change: transform;
-        -webkit-transform: translate3d(0, 0, 0);
-        transform: translate3d(0, 0, 0);
-        transform: translateX(100%)/*; opacity: .1*/ }
+        -webkit-transform: translate3d(100%, 0, 0);
+        transform: translate3d(100%, 0, 0);
+        /*; opacity: .1*/ }
     to {
         will-change: transform;
         -webkit-transform: translate3d(0, 0, 0);
         transform: translate3d(0, 0, 0);
-        transform: translateX(0)/*; opacity: 1*/ }
+        /*; opacity: 1*/ }
 }
 @-webkit-keyframes fragment-pop-exit {
     from {
         will-change: transform;
         -webkit-transform: translate3d(0, 0, 0);
         transform: translate3d(0, 0, 0);
-        transform: translateX(0)/*; opacity: .8*/ }
+        /*; opacity: .8*/ }
     to {
         will-change: transform;
-        -webkit-transform: translate3d(0, 0, 0);
-        transform: translate3d(0, 0, 0);
-        transform: translateX(-20%)/*; opacity: 1*/ }
+        -webkit-transform: translate3d(-20%, 0, 0);
+        transform: translate3d(-20%, 0, 0);
+        /*; opacity: 1*/ }
 }
 @keyframes fragment-pop-exit {
     from {
         will-change: transform;
         -webkit-transform: translate3d(0, 0, 0);
         transform: translate3d(0, 0, 0);
-        transform: translateX(0)/*; opacity: .8*/ }
+        /*; opacity: .8*/ }
     to {
         will-change: transform;
-        -webkit-transform: translate3d(0, 0, 0);
-        transform: translate3d(0, 0, 0);
-        transform: translateX(-20%)/*; opacity: 1*/ }
+        -webkit-transform: translate3d(-20%, 0, 0);
+        transform: translate3d(-20%, 0, 0);
+        /*; opacity: 1*/ }
 }
 @-webkit-keyframes fragment-pop-enter {
     from {
         will-change: transform;
-        -webkit-transform: translate3d(0, 0, 0);
-        transform: translate3d(0, 0, 0);
-        transform: translateX(-20%)/*; opacity: 1*/ }
+        -webkit-transform: translate3d(-20%, 0, 0);
+        transform: translate3d(-20%, 0, 0);
+        opacity: 1 }
     to {
         will-change: transform;
         -webkit-transform: translate3d(0, 0, 0);
         transform: translate3d(0, 0, 0);
-        transform: translateX(0)/*; opacity: .8*/ }
+        opacity: .8 }
 }
 @keyframes fragment-pop-enter {
     from {
         will-change: transform;
-        -webkit-transform: translate3d(0, 0, 0);
-        transform: translate3d(0, 0, 0);
-        transform: translateX(-20%)/*; opacity: 1*/ }
+        -webkit-transform: translate3d(-20%, 0, 0);
+        transform: translate3d(-20%, 0, 0);
+        opacity: 1 }
     to {
         will-change: transform;
         -webkit-transform: translate3d(0, 0, 0);
         transform: translate3d(0, 0, 0);
-        transform: translateX(0)/*; opacity: .8*/ }
+        opacity: .8 }
 }
 @-webkit-keyframes fragment-exit {
     from {
         will-change: transform;
         -webkit-transform: translate3d(0, 0, 0);
         transform: translate3d(0, 0, 0);
-        transform: translateX(0)/*; opacity: 1*/ }
+        /*; opacity: 1*/ }
     to {
         will-change: transform;
-        -webkit-transform: translate3d(0, 0, 0);
-        transform: translate3d(0, 0, 0);
-        transform: translateX(100%)/*; opacity: .8*/ }
+        -webkit-transform: translate3d(100%, 0, 0);
+        transform: translate3d(100%, 0, 0);
+        /*; opacity: .8*/ }
 }
 @keyframes fragment-exit {
     from {
         will-change: transform;
         -webkit-transform: translate3d(0, 0, 0);
         transform: translate3d(0, 0, 0);
-        transform: translateX(0)/*; opacity: 1*/ }
+        /*; opacity: 1*/ }
     to {
         will-change: transform;
-        -webkit-transform: translate3d(0, 0, 0);
-        transform: translate3d(0, 0, 0);
-        transform: translateX(100%)/*; opacity: .8*/ }
+        -webkit-transform: translate3d(100%, 0, 0);
+        transform: translate3d(100%, 0, 0);
+        /*; opacity: .8*/ }
 }
 
 @-webkit-keyframes dialog-mask-in {
@@ -199,7 +230,7 @@
 /*------------------------------------------------------*/
 
 /* Unused */
-#dialog-stack {
+#dialog_stack {
     position: fixed;
     width: 100%;
     height: 100%;

@@ -11,7 +11,7 @@
         return;
 
     /* 版本号 */
-    var VERSION = '0.0.17';
+    var VERSION = '0.0.18';
 
     var $lr;
 
@@ -35,7 +35,7 @@
         isArray     = $.isArray,
         isFunction  = $.isFunction,
 
-    /* 抛出未实现异常, 仅用于开发期间防止无效的调用 */
+        /* 抛出未实现异常, 仅用于开发期间防止无效的调用 */
         throwNiyError = function() { throw new Error( 'Not implement yet!' ); };
 
     function _parseArgs(url, data, success, error, dataType) {
@@ -81,7 +81,8 @@
         $.ajax( options );
     }
 
-    $lr  = { undefined: undefined,
+    $lr = {
+        undefined:      undefined,
         win:            win,
 
         /* 是否为开发模式 */
@@ -120,14 +121,18 @@
      * @type {undefined}
      * @private
      */
-    var _viewport       = undefined;
+    $lr._viewport       = undefined;
 
     /* --------------------------------------------------------------------- */
 
     /* Extend */
-    $lr.ID_DIALOG        = 'lairen-dialog';
-    $lr.ID_DIALOG_MASK   = 'dialog-mask';
-    $lr.ID_FRAGMENT_ROOT = 'lairen-fragments';
+    /* 可见 DOM 的根节点 */
+    $lr.ID_VIEWPORT      = 'lairen_viewport';
+    /* Dialog 元素 */
+    $lr.ID_DIALOG        = 'lairen_dialog';
+    $lr.ID_DIALOG_MASK   = 'dialog_mask';
+    /* FIXME(XCL): 由于布局未知原因导致动画不理想, 这里暂时不在嵌套 DOM */
+    $lr.ID_FRAGMENT_ROOT = 'lairen_fragments';
 
     /* Layer manager */
     /* hasTopLayer */
@@ -274,9 +279,7 @@
     function _prepareDialog() {
         var html = [];
 
-        html.push( '<div class="dialog-wrapper" id="dialog-wrapper">' );
-        html.push( '<div id="dialog_body"></div>' );
-        html.push( '</div>' );
+        html.push( '<div class="dialog-wrapper" id="dialog_wrapper"><div id="dialog_body"></div></div>' );
 
         _DIALOG_WRAPPER_TEMPLATE = $( html.join( '' ) );
 
@@ -583,7 +586,6 @@
 
     /* _IS_DERIVE_       = '_derive_', */ /* 是识是否为派生实例 */
 
-
         _DERIVE_ID_     = '_derive_id_'; /* 派生后的实例 ID */
 
     var _ATTACH         = 'attach',
@@ -644,7 +646,14 @@
         [ 'render',     render      ],
 
         /* 获取该 Fragment 的容器 */
-        [ 'getContainer', getContainer ]
+        [ 'getContainer', getContainer ],
+
+        /* Storage */
+        [ 'put', $lr.throwNiyError ],
+        [ 'get', $lr.throwNiyError ],
+        [ 'has', $lr.throwNiyError ],
+        [ 'remove', $lr.throwNiyError ],
+        [ 'clear', $lr.throwNiyError ]
     ];
 
     /**
@@ -726,19 +735,19 @@
 
         /* Fragment 的容器 */
         /* TODO: Progress status */
-        html.push( '<div class="lairen-layout--fragment">' );
-        html.push( '</div>' );
+        html.push( '<div class="lairen-layout--fragment"></div>' );
 
         _FRAGMENT_TEMPLATE = $( html.join( '' ) );
 
         /* Fragment 根节点 */
-        _fragment_root = $( _idSelector( $lr.ID_FRAGMENT_ROOT ) );
+        $lr._viewport = $( _idSelector( $lr.ID_VIEWPORT ) );
+        /*_fragment_root = $( _idSelector( $lr.ID_FRAGMENT_ROOT ) );*/
         /* 设置 z-index */
-        _fragment_root.css( 'z-index', _alloZIndex( $lr.FRAGMENTS ) )
+        /*_fragment_root.css( 'z-index', _alloZIndex( $lr.FRAGMENTS ) )*/
     }
 
     function _ensure() {
-        _fragment_root || void _prepare()
+        $lr._viewport/*_fragment_root*/ || void _prepare()
     }
 
     /* --------------------------------------------------------------------- */
@@ -747,7 +756,7 @@
         var layout = getLayout.call( fragment );
 
         layout.css( 'z-index', fragment[ _STACK_INDEX_ ] );
-        _fragment_root.append( layout );
+        $lr._viewport/*_fragment_root*/.append( layout );
 
         _invokeHandler( fragment, _ATTACH/*attach*/ )
     }
@@ -1326,7 +1335,6 @@
 
         _FROM_STACK_YES = 1,
         _FROM_STACK_NO  = 0;
-
 
     function _show(target, noTransition, fromStack) {
         var layout = target[ _EL_ ][ _LAYOUT_ ];
@@ -1915,7 +1923,7 @@
          *           args:     {key: 'value'} // 参数对儿
          *           backable: false,         // 是否可后退
          *           requires: {String/[]},   // 依赖项
-         *           html/url: 'URL or HTML',  // 完整 URL 或 HTML 片段
+         *           html/url: 'URL or HTML', // 完整 URL 或 HTML 片段
          *
          *           onAttach: function() {
          *              // fragment 容器被添加到 DOM 中后会调用
@@ -2139,7 +2147,7 @@
     }
 
     /* 如果跳转到其它页面当后退至当前页面则可能 stack 丢失(RELOAD) */
-    var _onPopStateHandler = function(event) {
+    var _popStateHandler = function(event) {
         $lr.dev && console.log( 'history entries: ' + history.length );
 
         if ( ! _checkStateEvent( event ) )
@@ -2264,5 +2272,5 @@
     /* Manipulating the browser history */
     historyApiSupported
         && window.addEventListener( _LISTEN_WINDOW_POP_STATE,
-        _onPopStateHandler );
+        _popStateHandler );
 }(lairen);
