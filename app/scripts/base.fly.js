@@ -1247,7 +1247,7 @@
             title = target[ _TITLE ],
             hash = _buildHashWithBrowser( target );
 
-        console.log( '### setupCurrentState ' + !! from_uri );
+        /* console.log( '## setupCurrentState ' + !! from_uri ); */
 
         if ( from_uri )
             history.replaceState(state, title, hash);
