@@ -11,7 +11,7 @@
         return;
 
     /* 版本号 */
-    var VERSION = '0.0.18';
+    var VERSION = '0.0.19';
 
     var $lr;
 
@@ -86,7 +86,7 @@
         win:            win,
 
         /* 是否为开发模式 */
-        dev:            1,
+        dev:            0,
 
         /* 用于判断类型的函数 */
         isUndefined:    isUndefined,
