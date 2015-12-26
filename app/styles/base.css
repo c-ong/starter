@@ -63,10 +63,21 @@ body {
 }
 
 #dialog_mask, .lairen-layout--fragment {
+    /* 考虑在 X5 上关掉 transform http://x5.tencent.com/doc?id=1002#_1.1 */
     /*http://stackoverflow.com/questions/12643240/improving-css3-transition-performance*/
     /*will-change: transform;*/
     /*-webkit-transform: translate3d(0, 0, 0);*/
     /*transform: translate3d(0, 0, 0);*/
+
+    will-change: transform;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+
+    -webkit-perspective: 1000px;
+    perspective: 1000px;
 }
 
 .lairen-layout--fragment {
@@ -106,100 +117,101 @@ body {
 }
 
 /*------------------------------------------------------*/
+/* 部分 Android 动画不流畅,固此我们使用 translateX 而不是 translate3d */
 @-webkit-keyframes fragment-enter {
     from {
         will-change: transform;
-        -webkit-transform: translate3d(100%, 0, 0);
-        transform: translate3d(100%, 0, 0);
+        -webkit-transform: translateX(100%);
+        transform: translateX(100%);
         /*; opacity: .1*/ }
     to {
         will-change: transform;
-        -webkit-transform: translate3d(0, 0, 0);
-        transform: translate3d(0, 0, 0);
+        -webkit-transform: translateX(0);
+        transform: translateX(0);
         /*; opacity: 1*/ }
 }
 @keyframes fragment-enter {
     from {
         will-change: transform;
-        -webkit-transform: translate3d(100%, 0, 0);
-        transform: translate3d(100%, 0, 0);
+        -webkit-transform: translateX(100%);
+        transform: translateX(100%);
         /*; opacity: .1*/ }
     to {
         will-change: transform;
-        -webkit-transform: translate3d(0, 0, 0);
-        transform: translate3d(0, 0, 0);
+        -webkit-transform: translateX(0);
+        transform: translateX(0);
         /*; opacity: 1*/ }
 }
 @-webkit-keyframes fragment-pop-exit {
     from {
         will-change: transform;
-        -webkit-transform: translate3d(0, 0, 0);
-        transform: translate3d(0, 0, 0);
+        -webkit-transform: translateX(0);
+        transform: translateX(0);
         /*; opacity: .8*/ }
     to {
         will-change: transform;
-        -webkit-transform: translate3d(-20%, 0, 0);
-        transform: translate3d(-20%, 0, 0);
+        -webkit-transform: translateX(-20%);
+        transform: translateX(-20%);
         /*; opacity: 1*/ }
 }
 @keyframes fragment-pop-exit {
     from {
         will-change: transform;
-        -webkit-transform: translate3d(0, 0, 0);
-        transform: translate3d(0, 0, 0);
+        -webkit-transform: translateX(0);
+        transform: translateX(0);
         /*; opacity: .8*/ }
     to {
         will-change: transform;
-        -webkit-transform: translate3d(-20%, 0, 0);
-        transform: translate3d(-20%, 0, 0);
+        -webkit-transform: translateX(-20%);
+        transform: translateX(-20%);
         /*; opacity: 1*/ }
 }
 @-webkit-keyframes fragment-pop-enter {
     from {
         will-change: transform;
-        -webkit-transform: translate3d(-20%, 0, 0);
-        transform: translate3d(-20%, 0, 0);
-        opacity: 1 }
+        -webkit-transform: translateX(-20%);
+        transform: translateX(-20%);
+        /*opacity: 1*/ }
     to {
         will-change: transform;
-        -webkit-transform: translate3d(0, 0, 0);
-        transform: translate3d(0, 0, 0);
-        opacity: .8 }
+        -webkit-transform: translateX(0);
+        transform: translateX(0);
+        /*opacity: .8*/ }
 }
 @keyframes fragment-pop-enter {
     from {
         will-change: transform;
-        -webkit-transform: translate3d(-20%, 0, 0);
-        transform: translate3d(-20%, 0, 0);
-        opacity: 1 }
+        -webkit-transform: translateX(-20%);
+        transform: translateX(-20%);
+        /*opacity: 1*/ }
     to {
         will-change: transform;
-        -webkit-transform: translate3d(0, 0, 0);
-        transform: translate3d(0, 0, 0);
-        opacity: .8 }
+        -webkit-transform: translateX(0);
+        transform: translateX(0);
+        /*opacity: .8*/ }
 }
 @-webkit-keyframes fragment-exit {
     from {
         will-change: transform;
-        -webkit-transform: translate3d(0, 0, 0);
-        transform: translate3d(0, 0, 0);
+        -webkit-transform: translateX(0);
+        transform: translateX(0);
         /*; opacity: 1*/ }
     to {
         will-change: transform;
-        -webkit-transform: translate3d(100%, 0, 0);
-        transform: translate3d(100%, 0, 0);
+        -webkit-transform: translateX(100%);
+        transform: translateX(100%);
         /*; opacity: .8*/ }
 }
 @keyframes fragment-exit {
     from {
         will-change: transform;
-        -webkit-transform: translate3d(0, 0, 0);
-        transform: translate3d(0, 0, 0);
+        -webkit-transform: translateX(0);
+        transform: translateX(0);
         /*; opacity: 1*/ }
     to {
         will-change: transform;
-        -webkit-transform: translate3d(100%, 0, 0);
-        transform: translate3d(100%, 0, 0);
+        -webkit-transform: translateX(100%);
+        transform: translateX(100%);
         /*; opacity: .8*/ }
 }
 
