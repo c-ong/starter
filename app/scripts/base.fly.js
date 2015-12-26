@@ -24,10 +24,15 @@
         browser = {},
 
         /* 是否为微信环境 */
-        wechat  = ua.match( /MicroMessenger\/([\d.]+)/ig );
+        wechat  = ua.match( /MicroMessenger\/([\d.]+)/ig ),
+        /* 是否为 Tencent X 系统浏览器(目前为 X5) */
+        qq      = ua.match( /MQQBrowser\/([\d.]+)/ig );
 
     /* 是否运行于微信 WebView 环境 */
-    wechat && ( browser.wechat = 1 );
+    browser.wechat  = !! wechat,
+    browser.qq      = !! qq;
+    /*wechat && ( browser.wechat = 1 );*/
+    /*qq && ( browser.qq = 1 );*/
 
     /* 一些判断类型的函数 */
     var isUndefined = function(who) { return undefined === who },

@@ -51,7 +51,6 @@
         // 可以通过该字段来指定默认内容也可以调用 render 方法来填充内容
         html: '<div id="starter"><div style="padding: 16px 0;">Dialog & View Switcher 使用演示</div>' +
 
-        '<button onclick="$fragment.go(\'view.about\', {key:\'value\'})">加载并呈现 About UI ->></button>' +
         '<button onclick="$fragment.go(\'view.about\', {key:\'modify\'})">加载并呈现 About UI & Args->></button>' +
 
         '<button onclick="alert()">系统 Dialog</button>' +
@@ -60,6 +59,7 @@
         '<button onclick="x.cancel()">Cancel dialog</button>' +
         '<button onclick="x.dismiss()">Dismiss dialog</button>' +
         '<button onclick="alert(navigator.userAgent)">Present the User agent</button>' +
+        '<button onclick="alert(lairen.browser.qq)">Detect the QQ X5 Browser</button>' +
         '<div style="padding: 16px;"><a href="#!view.about">Uri navigation(About)</a></div>' +
         '</div>',
 
