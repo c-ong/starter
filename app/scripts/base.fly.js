@@ -21,18 +21,45 @@
     var emptyFn = function() {};
 
     var ua      = navigator.userAgent.toLowerCase(),
+        os      = {},
         browser = {},
+
+        /* 这取自于 zepto 以后可能完全使用 zepto.detect */
+        android = ua.match(/(Android);?[\s\/]+([\d.]+)?/),
+        ipad    = ua.match(/(iPad).*OS\s([\d_]+)/),
+        ipod    = ua.match(/(iPod)(.*OS\s([\d_]+))?/),
+        iphone  = ! ipad && ua.match(/(iPhone\sOS)\s([\d_]+)/),
 
         /* 是否为微信环境 */
         wechat  = ua.match( /MicroMessenger\/([\d.]+)/ig ),
         /* 是否为 Tencent X 系统浏览器(目前为 X5) */
-        qq      = ua.match( /MQQBrowser\/([\d.]+)/ig );
+        qqx5    = ua.match( /MQQBrowser\/([\d.]+)/ig );
+
+    if ( android ) {
+        os.android = ! 0;
+        os.version = android[2];
+    } else {
+        os.android = ! 1;
+    }
+
+    if ( iphone && ! ipod ) {
+        os.ios = os.iphone = ! 0;
+        os.version = iphone[2].replace(/_/g, '.');
+    }
+    if ( ipad ) {
+        os.ios = os.ipad = ! 0;
+        os.version = ipad[2].replace(/_/g, '.');
+    }
+    if ( ipod ) {
+        os.ios = os.ipod = ! 0;
+        os.version = ipod[3] ? ipod[3].replace(/_/g, '.') : null;
+    }
+    'ios' in os ? null : (os.ios = ! 1);
 
     /* 是否运行于微信 WebView 环境 */
-    browser.wechat  = !! wechat,
-    browser.qq      = !! qq;
-    /*wechat && ( browser.wechat = 1 );*/
-    /*qq && ( browser.qq = 1 );*/
+    browser.wechat  = !! wechat;
+    /* QQ X5 浏览器 */
+    browser.qqx5    = !! qqx5;
 
     /* 一些判断类型的函数 */
     var isUndefined = function(who) { return undefined === who },
@@ -105,8 +132,9 @@
         get:            get,
         post:           post,
 
-        /* Runtime */
-        browser:        browser
+        /* Runtime Env */
+        os:             os,
+        browser:        browser,
 
         /* 提供了短名方法,用于访问 console 方法 */
         /*
@@ -2097,6 +2125,7 @@
 
     /**
      * TODO:
+     * 支持停用动画
      * handling unknown id
      * put => get => remove
      * onPreRender => onRendered
@@ -2291,6 +2320,23 @@
 
         _go( deriveId, from_uri );
     }
+
+    function setGPUAcceleratedCompositingEnabled(viewport, enabled) {
+        var flag = 'x-ui';
+
+        viewport = $(viewport);
+
+        if ( enabled ) {
+            viewport.hasClass( flag ) || viewport.addClass( flag );
+        } else {
+            viewport.hasClass( flag ) && viewport.removeClass( flag );
+        }
+    }
+
+    (function(viewport) {
+        /*setGPUAcceleratedCompositingEnabled( viewport, 0 );*/
+        /*setGPUAcceleratedCompositingEnabled( viewport, ! ($lr.os.ios && $lr.browser.qqx5) );*/
+    }(document.body));
 
     /* TODO(XCL): addEventListener */
     _LISTENER_HASH_CHANGE in win && ( window[ _LISTENER_HASH_CHANGE ] =

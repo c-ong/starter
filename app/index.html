@@ -4,37 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Untitled</title>
-    <script type="text/javascript" charset="utf-8"
-            src="libs/zepto/zepto.js?1.1.6"></script>
-    <script type="text/javascript" charset="utf-8"
-            src="libs/zepto/fx.js?1.1.6"></script>
 
     <script type="text/javascript" charset="utf-8"
             src="libs/mdl/material.js?1.0.5"></script>
     <link rel="stylesheet" href="libs/mdl/material.css?1.0.5">
 
-
-    <link rel="stylesheet" href="styles/base.css?2">
+    <link rel="stylesheet" href="styles/base.css?3">
+    <link rel="stylesheet" href="styles/app.css?2">
     <!--<script type="text/javascript" charset="utf-8"
-            src="scripts/base.js?2"></script>-->
-    <script type="text/javascript" charset="utf-8"
-            src="scripts/base.fly.js?3"></script>
-
+            src="scripts/base.js.old?2"></script>-->
 </head>
-<body>
-<div id="lairen_viewport">
+<body id="lairen_viewport" class="x-ui">
 
     <div id="lairen_dialog" style="display: none;">
         <div id="dialog_mask" style="display: none;">
         </div>
     </div>
+</body>
 
 <!--    <div id="lairen_fragments">
     </div>-->
 
-</div>
+<script type="text/javascript" charset="utf-8"
+        src="libs/zepto/zepto.js?1.1.6"></script>
+<script type="text/javascript" charset="utf-8"
+        src="libs/zepto/fx.js?1.1.6"></script>
+<script type="text/javascript" charset="utf-8"
+        src="scripts/base.fly.js?5"></script>
 
-<script>
+<script defer>
     var dialog_content = '<div onclick="lairen.dialog().show()" style="border: 1px solid red; padding: 10px;">点我再打开一个 Dialog</div>'
             + '<button id="yes">Button</button>';
     var x = lairen.dialog(dialog_content, [{
@@ -59,7 +57,7 @@
         '<button onclick="x.cancel()">Cancel dialog</button>' +
         '<button onclick="x.dismiss()">Dismiss dialog</button>' +
         '<button onclick="alert(navigator.userAgent)">Present the User agent</button>' +
-        '<button onclick="alert(lairen.browser.qq)">Detect the QQ X5 Browser</button>' +
+        '<button onclick="alert(lairen.browser.qqx5)">Detect the QQ X5 Browser</button>' +
         '<div style="padding: 16px;"><a href="#!view.about">Uri navigation(About)</a></div>' +
         '</div>',
 
@@ -135,5 +133,4 @@
     $fragment.beginWith('view.home');
 
 </script>
-</body>
 </html>
