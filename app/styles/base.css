@@ -1,21 +1,23 @@
 /* Used for the first fragment */
-html {
-    font-size: 20px !important;
+* {
+    box-sizing: border-box;
+}
+
+html{
+    font-family: sans-serif !important;
+    font-size: 62.5% !important;
     -webkit-text-size-adjust: 100%;
 }
 
 body {
-    margin: 0;
     position: absolute;
+    margin: 0;
     top: 0;
     right: 0;
     bottom: 0;
     left: 0;
-    font-family: "Helvetica Neue", Helvetica, sans-serif;
-    font-size: 0.85rem;
-    line-height: 1.5;
+    line-height: 1.5rem;
     color: #3d4145;
-    background: #eeeeee;
     overflow: hidden;
 }
 
@@ -58,8 +60,6 @@ body {
 
 .lairen-layout--fragment {
     overflow: hidden;
-
-    box-sizing: border-box;
     position: absolute;
     left: 0;
     top: 0;
