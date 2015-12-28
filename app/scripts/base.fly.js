@@ -2114,6 +2114,13 @@
         destroy:    $lr.throwNiyError
     };
 
+    /**
+     * 为 $fragment[go, back] 添加短名方法.
+     *
+     * @type {_go}
+     */
+    win.go = win.$fragment.go, win.back = win.$fragment.back;
+
     /* --------------------------------------------------------------------- */
 
     /**
