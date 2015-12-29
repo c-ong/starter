@@ -11,7 +11,7 @@
         return;
 
     /* 版本号 */
-    var VERSION = '0.0.19';
+    var VERSION = '0.0.20';
 
     var $lr;
 
@@ -494,20 +494,20 @@
         current
         || (
             _dialog_mask.show(),
-                _dialog_root.show(),
+            _dialog_root.show(),
 
-                /* properties, duration, ease, callback, delay */
-                _dialog_mask.animate(
-                    'dialog-mask-in',
-                    $.fx.speeds.slow,
-                    /*'cubic-bezier(0.4, 0, 0.2, 1)'*/'linear' )
+            /* properties, duration, ease, callback, delay */
+            _dialog_mask.animate(
+                'dialog-mask-in',
+                $.fx.speeds.slow,
+                /*'cubic-bezier(0.4, 0, 0.2, 1)'*/'linear' )
         );
 
         el.wrapper.show();
 
         /* Vertical Center */
         var margin = (_dialog_root.height() / 2) - (el.wrapper.height() / 2);
-        el.wrapper.css( 'margin-top', margin + "px" );
+        el.wrapper.css( 'margin-top', margin + 'px' );
 
         try {
             return this
@@ -852,6 +852,7 @@
 
     /**
      * 获取指定 fragment 的 callback(s).
+     *
      * @param fragment
      * @returns {map}
      * @private
@@ -864,6 +865,7 @@
 
     /**
      * 是否强制 Render 哪怕 View 不可见.
+     *
      * @type {boolean}
      * @private
      */
@@ -875,6 +877,7 @@
 
     /**
      * 填充内容, 可以传入 HTML 片段或 URL.
+     *
      * { html: html }
      * { url: url, param: params }
      */
@@ -950,6 +953,8 @@
     }
 
     function _finishAndGo(id, args) {
+        if ( _isLocked() ) return;
+
         /* TODO: current -> update hash direct */
         _exist( id )
         && (
@@ -978,12 +983,14 @@
             $lr.throwNiyError();
         /* return; */
 
+        _beginTrans();
+
         _casStackIfNecessary( current, next );
 
         /* 暂停当前 fragment */
         pause( current );
         /* 隐藏当前 fragment */
-        _hide( current, _FROM_STACK_YES );
+        _hide( current, _FROM_STACK_YES, 1 );
 
         layout[ 0 ].parentNode
             || (
@@ -1006,7 +1013,9 @@
             _current = next;
 
             /* 更新至 location.hash */
-            _applyHash( _current )
+            _applyHash( _current );
+
+            ALWAYS_POST_COMMIT_ON_BACK || _endTrans();
         }
     }
 
@@ -1039,18 +1048,25 @@
 
     }
 
+    function _isLocked() {
+        return _in_transaction_;
+    }
+
     /**
      * 是否可以进行后退操作.
      * @returns {boolean}
      */
     function canBack() {
-        return 0 in _backStack
+        return ! _isLocked() && 0 in _backStack
     }
 
     /**
      * 请求进行后退操作, 如果 BackStack 有可用的记录.
      */
     function back() {
+        if ( ! canBack() )
+            return;
+
         /* 暂时作用 History API */
         history.back();
         /*_performBack()*/
@@ -1104,6 +1120,9 @@
     }
 
     function _go(id, args, from_uri) {
+        if ( _isLocked() )
+            return;
+
         _exist( id )
         && (
             isPlainObject( args )
@@ -1209,6 +1228,22 @@
 
     /* --------------------------------------------------------------------- */
 
+    var _in_transaction_ = ! 1;
+
+    var ALWAYS_POST_COMMIT_ON_BACK = ! 0;
+
+    function _beginTrans() {
+        _in_transaction_ || (_in_transaction_ = ! 0);
+        /*console.log("beginTrans: %s", _in_transaction_);*/
+    }
+
+    function _endTrans() {
+        _in_transaction_ && (_in_transaction_ = ! 1);
+
+        /*$lr.dev && console.timeEnd('Trans');
+        console.log("endTrans: %s", _in_transaction_);*/
+    }
+
     /**
      * 执行 Go 操作.
      *
@@ -1231,30 +1266,39 @@
         if ( current && next == current )
             return;
 
+        var postCommit = 0;
+
+        _beginTrans();
+
+        /*$lr.dev && console.time('Trans');*/
+
         _casStackIfNecessary( current, next );
 
         ( layout[ 0 ].parentNode && '' != layout.html() )
-            || (
-                attach      ( next ),
+        || (
+            attach      ( next ),
                 create      ( next ),
                 createView  ( next ),
                 start       ( next )
-            );
-
-        /* onVisibilityChanged */
-
-        /* _casStackIfNecessary( current, next ); */
-
-        /* 隐藏当前 fragment */
-        current && ( pause( current), _hide( current, _FROM_STACK_YES ) );
-
-        /* FIXME(XCL): 不管是否被暂停这里绝对执行恢复操作 */
-        resume( next );
+        );
 
         /* 呈现下一个 fragment */
         try {
-            _show( next, isTop, _FROM_STACK_NO )
+            /* onVisibilityChanged */
+
+            /* _casStackIfNecessary( current, next ); */
+
+            /* 隐藏当前 fragment */
+            current
+            && ( postCommit = 1,
+                pause( current ),
+                _hide( current, _FROM_STACK_YES, 1 ) );
         } finally {
+            /* FIXME(XCL): 不管是否被暂停这里绝对执行恢复操作 */
+            resume( next );
+
+            _show( next, isTop, _FROM_STACK_NO );
+
             /* 加入 BackStack */
             if ( current && ! isTop ) {
                 _addToBackStack( current );
@@ -1272,15 +1316,16 @@
                 /* 更新至 location.hash */
                 _applyHash( _current )
             }
+
+            postCommit || _endTrans();
         }
     }
 
     function _setupCurrentState(target, from_uri) {
-        var state = _newState(),
-            title = target[ _TITLE ],
-            hash = _buildHashWithBrowser( target );
-
         /* console.log( '## setupCurrentState ' + !! from_uri ); */
+        var state   = _newState(),
+            title   = target[ _TITLE ],
+            hash    = _buildHashWithBrowser( target );
 
         if ( from_uri )
             history.replaceState(state, title, hash);
@@ -1294,6 +1339,17 @@
         var state = {};
             state[_IDX] = _FIRST_STATE;
 
+        /*
+         * Chrome 45 (Version 45.0.2454.85 m) started throwing an error,
+         * Uncaught SecurityError: Failed to execute 'replaceState' on
+         * 'History': A history state object with URL
+         * 'file:///usr/local/page.html#p=v' cannot be created in a document
+         * with origin 'null'.
+         * Ref(Axure)
+         **/
+
+        /* TODO(XCL): We should use window.location.replace to fix that the
+                      browser doesn't support state replace issue. */
         history.replaceState(
             state,
             initial[ _TITLE ],
@@ -1309,12 +1365,15 @@
         var current = _current;
         var next    = _popBackStack();
 
+        _beginTrans();
+
         /* FIXME: */
         /* _casStackIfNecessary( current, next ); */
 
         pause( current );
+
         /* 隐藏当前 fragment */
-        _hide( current, _FROM_STACK_NO );
+        _hide( current, _FROM_STACK_NO, 1 );
 
         try {
             /* 恢复 */
@@ -1331,6 +1390,8 @@
             } else {
                 _applyHash( _current )
             }
+
+            ALWAYS_POST_COMMIT_ON_BACK || _endTrans();
         }
     }
 
@@ -1385,9 +1446,10 @@
     function _show(target, noTransition, fromStack) {
         var layout = target[ _EL_ ][ _LAYOUT_ ];
 
-        $lr.dev && console.log( '<< show # ' + target[ _ID ] + ', ' + (noTransition
+        $lr.dev && console.log( "<< show # %s, %s", target[ _ID ],
+                (noTransition
                 ? ''
-                : (fromStack ? 'fragment-pop-enter':'fragment-enter') ) );
+                : (fromStack ? 'fragment-pop-enter' : 'fragment-enter') ) );
 
         /* Show the dom */
         layout.show();
@@ -1400,12 +1462,23 @@
             'cubic-bezier(0.4, 0, 0.2, 1)'/*'linear'*/ )
     }
 
-    function _hide(target, fromStack) {
+    /**
+     * 隐藏 fragment.
+     *
+     * @param target
+     * @param fromStack 是否从 stack 中取得 fragment
+     * @param end_trans_needed 是否需要结束 trans
+     * @private
+     */
+    function _hide(target, fromStack, end_trans_needed) {
         var layout = target[ _EL_ ][ _LAYOUT_ ];
 
-        $lr.dev && console.log( '>> hide # ' + target[ _ID ] + ', ' + (fromStack
+        $lr.dev && console.log( ">> hide # %s, %s", target[ _ID ],
+                (fromStack
                 ? 'fragment-pop-exit'
                 : 'fragment-exit') );
+
+        /*$lr.dev && console.time('EndAnimation');*/
 
         /* properties, duration, ease, callback, delay */
         layout.animate(
@@ -1415,6 +1488,8 @@
             function() {
                 /* Reset the opacity prop */
                 layout.hide();
+
+                end_trans_needed && _endTrans();
                 /* layout.css( { opacity: 1 } ); */
             } )
     }
@@ -1605,6 +1680,7 @@
 
     /**
      * 构建一个 fragment.
+     *
      * @param id 唯一的 fragment 标识,如: ui.about
      * @param config fragment 的配置数据
      * @returns fragment
@@ -1616,7 +1692,7 @@
             throw Error( "Invalid id(" + id + ")" );
 
         if ( $lr.isUndefined( config ) )
-            throw Error( "Must be specify the config for " + id )
+            throw Error( "Must be specify the config for " + id );
 
         /* TODO: 延迟初始化 */
         _ensure();
@@ -1724,6 +1800,7 @@
 
     /**
      * 拼装一个 Router hash 值, 用于区分常规 hash 我们的 hash 则以 !# 开头.
+     *
      * @param id
      * @returns {string}
      * @private
@@ -1846,6 +1923,7 @@
 
     /**
      * 将 hash 参数 URL 化 { a: 'a', b: 'b'} -> a=a&b=b.
+     *
      * @param args
      * @returns {string}
      * @private
@@ -2052,6 +2130,7 @@
         /**
          * 构建并呈现 fragment 如果当前不含有效的 hash 则使用指定的作为初始 fragment.
          * @param id
+         * @param args
          */
         beginWith:  function(id, args) {
             _ORIGIN_HASH || _go( id, args )
@@ -2086,7 +2165,7 @@
         /**
          * 可以向 fragment 传递一些参数用来更新.
          * @param id
-         * @param params
+         * @param args
          */
         update:     function(id, args) {
             // TODO:
@@ -2117,7 +2196,7 @@
     /**
      * 为 $fragment[go, back] 添加短名方法.
      *
-     * @type {_go}
+     * @type {function}
      */
     win.go = win.$fragment.go, win.back = win.$fragment.back;
 
@@ -2202,7 +2281,7 @@
 
     /* 如果跳转到其它页面当后退至当前页面则可能 stack 丢失(RELOAD) */
     var _popStateHandler = function(event) {
-        $lr.dev && console.log( 'history entries: ' + history.length );
+        /*$lr.dev && console.log( "history entries: %s", history.length );*/
 
         if ( ! _checkStateEvent( event ) )
             return;
@@ -2249,6 +2328,8 @@
         /*$lr.dev && console.log( 'onHashChange::cs -> ' + JSON.stringify( _currentState )
             + ' ls -> ' + JSON.stringify( _detect_backward_for_uri )
             + ' ' + new Date().getTime() );*/
+        /* TODO(XCL): Check for transaction timed out... */
+        if ( _isLocked() ) return;
 
         var oldHash = _current
             ? { hash: _current[ _HASH ],
@@ -2267,8 +2348,10 @@
 
     /* TODO: To detect the history back act. */
     var _handleHashChange = function(oldHash, newHash) {
-        $lr.dev && console.log( 'onHashChanged ' + JSON.stringify( oldHash )
-            + ' ' + JSON.stringify( newHash ) + ' ' + new Date().getTime() );
+        $lr.dev && console.log( "onHashChanged %s %s %s"
+            , JSON.stringify( oldHash )
+            , JSON.stringify( newHash )
+            , new Date().getTime() );
 
         /* 是否 hash 真的需要更新 */
         /* 暂时使用 History API */
@@ -2328,6 +2411,12 @@
         _go( deriveId, from_uri );
     }
 
+    /**
+     * 设置 GPU 硬件加速开启状态.
+     *
+     * @param viewport
+     * @param enabled
+     */
     function setGPUAcceleratedCompositingEnabled(viewport, enabled) {
         var flag = 'x-ui';
 
