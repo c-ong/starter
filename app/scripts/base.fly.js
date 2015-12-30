@@ -54,7 +54,7 @@
         os.ios = os.ipod = ! 0;
         os.version = ipod[3] ? ipod[3].replace(/_/g, '.') : null;
     }
-    'ios' in os ? null : (os.ios = ! 1);
+    'ios' in os || (os.ios = ! 1);
 
     /* 是否运行于微信 WebView 环境 */
     browser.wechat  = !! wechat;
@@ -1339,14 +1339,14 @@
         var state = {};
             state[_IDX] = _FIRST_STATE;
 
-        /*
+        /**
          * Chrome 45 (Version 45.0.2454.85 m) started throwing an error,
          * Uncaught SecurityError: Failed to execute 'replaceState' on
          * 'History': A history state object with URL
          * 'file:///usr/local/page.html#p=v' cannot be created in a document
          * with origin 'null'.
          * Ref(Axure)
-         **/
+         */
 
         /* TODO(XCL): We should use window.location.replace to fix that the
                       browser doesn't support state replace issue. */
