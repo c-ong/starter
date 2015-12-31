@@ -1,9 +1,17 @@
 /**
+ * 该代码包含以下内容:
+ *
+ * 1: 基本函数;
+ * 2: Dialog 实现;
+ * 3: Fragment 实现;
+ */
+
+/**
  * Created by xong on 10/29/15.
  *
  * @dependents Zepto
  */
-;!function() {
+;!function(undefined) {
     "use strict";
 
     /* FIXME(XCL): 考虑 App 注入场景 */
@@ -11,11 +19,10 @@
         return;
 
     /* 版本号 */
-    var VERSION = '0.0.20';
+    var VERSION = '0.0.21';
 
     var $lr;
 
-    var undefined;
     var win     = window;
 
     var emptyFn = function() {};
@@ -66,6 +73,8 @@
         isString    = function(who) { return 'string' == typeof who },
         isArray     = $.isArray,
         isFunction  = $.isFunction,
+        isNumber    = function(who) { return ! isUndefined(who)
+            && 'number' === typeof who },
 
         /* 抛出未实现异常, 仅用于开发期间防止无效的调用 */
         throwNiyError = function() { throw new Error( 'Not implement yet!' ); };
@@ -125,6 +134,7 @@
         isString:       isString,
         isArray:        isArray,
         isFunction:     isFunction,
+        isNumber:       isNumber,
 
         throwNiyError:  throwNiyError,
 
@@ -249,7 +259,49 @@
 
     /* --------------------------------------------------------------------- */
 
-    win.lairen = $lr
+    win.lairen = $lr;
+
+    var _loader = document.getElementsByTagName('head')[0];
+
+    var _import = function(res, delay) {
+        delay
+            ? setTimeout( function() {
+                    _loader.appendChild(res)
+                }, delay )
+            : _loader.appendChild(res);
+    };
+
+    /**
+     * 加载 Javascript 资源.
+     *
+     * @param src
+     * @param callback
+     * @param delay
+     */
+    win.import_script = function(src, callback, delay) {
+        /* TODO(XCL): callback 处理 */
+        if ( isNumber(callback) ) delay = callback;
+
+        var script = document.createElement('script');
+        script.src = src;
+
+        _import(script, delay);
+    };
+
+    /**
+     * 加载 Style 资源.
+     *
+     * @param href
+     * @param delay
+     */
+    win.import_style = function(href, delay) {
+        var style = document.createElement('link');
+        style.rel = 'stylesheet';
+        style.type = 'text/css';
+        style.href = href;
+
+        _import(style, delay);
+    };
 }();
 
 /**
