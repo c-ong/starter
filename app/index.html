@@ -38,6 +38,7 @@
     var x = lairen.dialog(dialog_content, [{
         id: 'yes', callback: function () {
             console.dir(this);
+            alert('Hide_keyboard event: ' + ('hidekeyboard' in window));
             alert('Do not touch me');
         }
     }]);

@@ -12,7 +12,7 @@
  * @dependents Zepto
  */
 ;!function(undefined) {
-    "use strict";
+    'use strict';
 
     /* FIXME(XCL): 考虑 App 注入场景 */
     if ( window[ 'lairen' ] )
@@ -314,6 +314,34 @@
         isDom( trigger ) && 'blur' in trigger && trigger.blur();
         document.body.focus();
     };
+
+    /**
+     * 当你要执行的操作依赖外部代码, 且又不知外面代码何时载入完成时, 可考虑使用这个 fn, 这里会
+     * 按一秒的间隔去调用 checker, 当 checker 返回 true 时, 会调用你指定的 callback, 注
+     * 意这仅会调用一次你的 callback, 如:
+     * <pre>
+     *     case_run( function() {
+     *         return 'same_field' in window
+     *     },
+     *     function() {
+     *         alert( 'Found same_field.' );
+     *     } );
+     * </pre>
+     *
+     * @param checker
+     * @param callback
+     * @param context
+     */
+    win.case_run = function(checker, callback, context) {
+        var ctx = context || window;
+        var watcher = function() {
+            checker.call( ctx )
+                ? callback.call( ctx )
+                : setTimeout( watcher, 1e3 );
+        };
+
+        watcher();
+    }
 }();
 
 /**
