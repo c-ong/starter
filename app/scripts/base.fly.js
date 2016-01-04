@@ -72,9 +72,10 @@
     var isUndefined = function(who) { return undefined === who },
         isString    = function(who) { return 'string' == typeof who },
         isArray     = $.isArray,
-        isFunction  = $.isFunction,
         isNumber    = function(who) { return ! isUndefined(who)
             && 'number' === typeof who },
+        isFunction  = $.isFunction,
+        isDom       = function(who) { $.isPlainObject(who) && who.nodeType > 0 },
 
         /* 抛出未实现异常, 仅用于开发期间防止无效的调用 */
         throwNiyError = function() { throw new Error( 'Not implement yet!' ); };
@@ -135,6 +136,7 @@
         isArray:        isArray,
         isFunction:     isFunction,
         isNumber:       isNumber,
+        isDom:          isDom,
 
         throwNiyError:  throwNiyError,
 
@@ -144,7 +146,7 @@
 
         /* Runtime Env */
         os:             os,
-        browser:        browser,
+        browser:        browser
 
         /* 提供了短名方法,用于访问 console 方法 */
         /*
@@ -302,6 +304,16 @@
 
         _import(style, delay);
     };
+
+    /**
+     * 隐藏 Keyboard.
+     *
+     * @param {Element} trigger input 元素,如: textarea, input
+     */
+    win.hide_keyboard = function(trigger) {
+        isDom( trigger ) && 'blur' in trigger && trigger.blur();
+        document.body.focus();
+    };
 }();
 
 /**
@@ -362,11 +374,11 @@
     }
 
     function _prepareDialog() {
-        var html = [];
+        /*var html = [];
 
-        html.push( '<div class="dialog-wrapper" id="dialog_wrapper"><div id="dialog_body"></div></div>' );
+        html.push( '' );*/
 
-        _DIALOG_WRAPPER_TEMPLATE = $( html.join( '' ) );
+        _DIALOG_WRAPPER_TEMPLATE = $( '<div class="dialog-wrapper" id="dialog_wrapper"><div id="dialog_body"></div></div>'/*html.join( '' )*/ );
 
         _dialog_root = $( _idSelector( $lr.ID_DIALOG ) );
         _dialog_mask = $( _idSelector( $lr.ID_DIALOG_MASK ) );
@@ -816,13 +828,15 @@
     }
 
     function _prepare() {
-        var html = [];
+        /*var html = [];*/
 
         /* Fragment 的容器 */
         /* TODO: Progress status */
-        html.push( '<div class="lairen-layout--fragment"></div>' );
+        /*html.push( '<div class="lairen-layout--fragment"></div>' );
 
-        _FRAGMENT_TEMPLATE = $( html.join( '' ) );
+        _FRAGMENT_TEMPLATE = $( html.join( '' ) );*/
+
+        _FRAGMENT_TEMPLATE = $( '<div class="lairen-layout--fragment"></div>' );
 
         /* Fragment 根节点 */
         $lr._viewport = $( _idSelector( $lr.ID_VIEWPORT ) );
@@ -1295,6 +1309,8 @@
         /*$lr.dev && console.timeEnd('Trans');
         console.log("endTrans: %s", _in_transaction_);*/
     }
+
+    /* currentlyFragment */
 
     /**
      * 执行 Go 操作.

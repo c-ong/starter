@@ -97,7 +97,6 @@
     // ------------------------------------------------------------------------
 
     var config_login = {
-        url: 'http://192.168.3.202/pull/login',
 
         onReload: function() {
             // 在这里重新载入数据
@@ -108,8 +107,16 @@
 //            console.log('onStart')
         },
 
+        onCreateView: function() {
+            this.render( {url: 'http://192.168.3.202/pull/login'});
+        },
+
         onResume: function () {
 //            console.log('onResume')
+        },
+
+        onRendered: function() {
+
         },
 
         // ----------------------- 上下为对应的 Callback ------------------------
