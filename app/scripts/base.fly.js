@@ -19,7 +19,7 @@
         return;
 
     /* 版本号 */
-    var VERSION = '0.0.22';
+    var VERSION = '0.0.23';
 
     var $lr;
 
@@ -1098,7 +1098,7 @@
         resume( next );
 
         /* 呈现下一个 fragment */
-        _show( next, _TRANSITION_YES, _FROM_STACK_NO );
+        _show( next, _TRANSITION_SLIDE, _FROM_STACK_NO );
 
         try {
             /* 销毁 current */
@@ -1234,7 +1234,16 @@
         location.hash = _buildInnerHashByFragment(fragment)
     }
 
-    function _go(id, args, from_uri) {
+    /**
+     * 进行 fragment 切换操作.
+     *
+     * @param id {string} 指定 fragment 的 id
+     * @param args {object} 参数
+     * @param from_uri {boolean} 是否从 uri 触发
+     * @param transit
+     * @private
+     */
+    function _go(id, args, from_uri, transit) {
         if ( _isLocked() )
             return;
 
@@ -1244,7 +1253,7 @@
                 ? _overrideArgs( id, args )
                 : from_uri = args,
 
-            _performGo.call( getFragment( id ), from_uri )
+            _performGo.call( getFragment( id ), from_uri, transit )
         )
     }
 
@@ -1386,10 +1395,11 @@
     /**
      * 执行 Go 操作.
      *
-     * @param from_uri 默认是通过 $fragment.go 来调用.
+     * @param fromUri 默认是通过 $fragment.go 来调用.
+     * @param transit
      * @private
      */
-    function _performGo(from_uri) {
+    function _performGo(fromUri, transit) {
         var current = _current,
 
             /* 是否有默认 view(Stack-based) */
@@ -1421,6 +1431,9 @@
                 start       ( next )
         );
 
+        /* 是否启用动画(首个 fragment 不应该被加载动画) */
+        $lr.isUndefined( transit ) && (transit = ! isTop);
+
         /* 呈现下一个 fragment */
         try {
             /* onVisibilityChanged */
@@ -1429,22 +1442,22 @@
 
             /* 隐藏当前 fragment */
             current
-            && ( postCommit = 1,
+            && ( postCommit = !! transit, /* 不启用动画, hidden 后也就无需 endTrans */
                 pause( current ),
-                _hide( current, _FROM_STACK_YES, 1 ) );
+                _hide( current, _FROM_STACK_YES, /* endTransNeeded */postCommit, transit ) );
         } finally {
             /* FIXME(XCL): 不管是否被暂停这里绝对执行恢复操作 */
             resume( next );
 
-            _show( next, isTop, _FROM_STACK_NO );
+            _show( next, transit, _FROM_STACK_NO );
 
             /* 加入 BackStack */
             if ( current && ! isTop ) {
                 _addToBackStack( current );
 
-                historyApiSupported && _setupCurrentState( next, from_uri )
+                historyApiSupported && _setupCurrentState( next, fromUri )
             } else {
-                historyApiSupported && _setupInitialState( next, from_uri )
+                historyApiSupported && _setupInitialState( next, fromUri )
             }
 
             _current = next;
@@ -1519,7 +1532,7 @@
             resume( next );
 
             /* 呈现下一个 fragment */
-            _show( next, _TRANSITION_YES, _FROM_STACK_YES );
+            _show( next, _TRANSITION_SLIDE, _FROM_STACK_YES );
         } finally {
             _current = next;
 
@@ -1576,25 +1589,26 @@
 
     /* --------------------------------------------------------------------- */
 
-    var _TRANSITION_YES = 0,
-        _TRANSITION_NO  = 1,
+    /* OPEN, CLOSE, FADE, SLIDE */
+    var _TRANSITION_SLIDE = 1,
+        _TRANSITION_NONE  = 0,
 
         _FROM_STACK_YES = 1,
         _FROM_STACK_NO  = 0;
 
-    function _show(target, noTransition, fromStack) {
+    function _show(target, transit, fromStack) {
         var layout = target[ _EL_ ][ _LAYOUT_ ];
 
         $lr.dev && console.log( "<< show # %s, %s", target[ _ID ],
-                (noTransition
-                ? ''
-                : (fromStack ? 'fragment-pop-enter' : 'fragment-enter') ) );
+                (transit
+                ? (fromStack ? 'fragment-pop-enter' : 'fragment-enter')
+                : '' ) );
 
         /* Show the dom */
         layout.show();
 
-        noTransition
-        ||
+        transit
+        &&
         layout.animate(
             fromStack ? 'fragment-pop-enter' : 'fragment-enter',
             $.fx.speeds.slow,
@@ -1606,11 +1620,14 @@
      *
      * @param target
      * @param fromStack 是否从 stack 中取得 fragment
-     * @param end_trans_needed 是否需要结束 trans
+     * @param endTransNeeded 是否需要结束 trans
+     * @param transit 动画
      * @private
      */
-    function _hide(target, fromStack, end_trans_needed) {
+    function _hide(target, fromStack, endTransNeeded, transit) {
         var layout = target[ _EL_ ][ _LAYOUT_ ];
+
+        $lr.isUndefined( transit ) && (transit = _TRANSITION_SLIDE);
 
         $lr.dev && console.log( ">> hide # %s, %s", target[ _ID ],
                 (fromStack
@@ -1619,18 +1636,24 @@
 
         /*$lr.dev && console.time('EndAnimation');*/
 
-        /* properties, duration, ease, callback, delay */
-        layout.animate(
-            fromStack ? 'fragment-pop-exit' : 'fragment-exit',
-            $.fx.speeds.slow,
-            'cubic-bezier(0.4, 0, 0.2, 1)'/*'linear'*/,
-            function() {
-                /* Reset the opacity prop */
-                layout.hide();
+        if ( transit ) {
+            /* properties, duration, ease, callback, delay */
+            layout.animate(
+                fromStack ? 'fragment-pop-exit' : 'fragment-exit',
+                $.fx.speeds.slow,
+                'cubic-bezier(0.4, 0, 0.2, 1)'/*'linear'*/,
+                function () {
+                    /* Reset the opacity prop */
+                    layout.hide();
 
-                end_trans_needed && _endTrans();
-                /* layout.css( { opacity: 1 } ); */
-            } )
+                    endTransNeeded && _endTrans();
+                    /* layout.css( { opacity: 1 } ); */
+                })
+        } else {
+            layout.hide();
+
+            endTransNeeded && _endTrans();
+        }
     }
 
     /* --------------------------------------------------------------------- */
@@ -2272,15 +2295,28 @@
          * @param args
          */
         beginWith:  function(id, args) {
-            _ORIGIN_HASH || _go( id, args )
+            _ORIGIN_HASH || _go( id, args, /* from_uri */0 )
         },
 
         /**
          * 呈现指定的 fragment, 如: ui.about.
+         *
          * @param id
          * @param args
          */
-        go:         _go,
+        go:         function(id, args) {
+            _go( id, args, /* from_uri */0 )
+        },
+
+        /**
+         * 呈现指定的 fragment 但不启用动画.
+         *
+         * @param id
+         * @param args
+         */
+        goWithoutFx: function(id, args) {
+            _go( id, args, /* from_uri */0, _TRANSITION_NONE )
+        },
 
         /**
          * 判断是否有上一个 fragment, 如果有则可以执行返回操作.
@@ -2337,7 +2373,9 @@
      *
      * @type {function}
      */
-    win.go = win.$fragment.go, win.back = win.$fragment.back;
+    win.go          = win.$fragment.go,
+    win.goWithoutFx = win.$fragment.goWithoutFx,
+    win.back        = win.$fragment.back;
 
     /* --------------------------------------------------------------------- */
 
@@ -2563,7 +2601,7 @@
         /* 是否 hash 真的需要更新 */
         /* 暂时使用 History API */
         if ( ! _isSameHash( oldHash, newHash ) ) {
-            _triggerGoNext( newHash, 1, 1 );
+            _triggerGoNext( newHash, /* from_user */1, /* from_uri */1 );
             /*_detect_backward_for_uri = _currentState;*/
         }
     };
@@ -2573,28 +2611,28 @@
     /**
      * 前往指定的 fragment.
      * @param hash
-     * @param from_user 是否来自用户的形为
-     * @param from_uri
+     * @param fromUser 是否来自用户的形为
+     * @param fromUri
      * @private
      */
-    var _triggerGoNext = function(hash, from_user, from_uri) {
+    var _triggerGoNext = function(hash, fromUser, fromUri) {
         var id = _makeIdentify( hash[ _HASH ] );
 
         if ( isSupportMultiInstance( id ) )
-            _goNextWithMultiMode( id, hash[ _ARGS ], from_user, from_uri );
+            _goNextWithMultiMode( id, hash[ _ARGS ], fromUser, fromUri );
         else
-            _goNext( id, hash[ _ARGS ], from_user, from_uri );
+            _goNext( id, hash[ _ARGS ], fromUser, fromUri );
     };
 
-    function _goNext(id, args, from_user, from_uri) {
+    function _goNext(id, args, fromUser, fromUri) {
         /* 更新 args */
         _overrideArgs( id, args );
 
         /* 前往该 view */
-        _go( id, from_uri )
+        _go( id, fromUri )
     }
 
-    function _goNextWithMultiMode(id, args, from_user, from_uri) {
+    function _goNextWithMultiMode(id, args, fromUser, fromUri) {
         /**
          * Step 1: 是否支持多实例
          * Step 2: 如果支持看实例是否被创建
@@ -2609,13 +2647,13 @@
 
         /* XXX: 实际上我们是依赖 args 的不同来维护多实例，但这并不意味着允许 args 为 null */
         if ( id == deriveId ) {
-            _goNext( id, args, from_user, from_uri );
+            _goNext( id, args, fromUser, fromUri );
             return;
         }
 
         _exist( deriveId ) || _buildDerive( id, deriveId, args );
 
-        _go( deriveId, from_uri );
+        _go( deriveId, fromUri );
     }
 
     /**
