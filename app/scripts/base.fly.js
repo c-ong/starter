@@ -2374,7 +2374,7 @@
      * @type {function}
      */
     win.go          = win.$fragment.go,
-    win.goWithoutFx = win.$fragment.goWithoutFx,
+    win.goFast      = win.$fragment.goFast = win.goWithoutFx = win.$fragment.goWithoutFx,
     win.back        = win.$fragment.back;
 
     /* --------------------------------------------------------------------- */
