@@ -19,7 +19,7 @@
         return;
 
     /* 版本号 */
-    var VERSION = '0.0.21';
+    var VERSION = '0.0.22';
 
     var $lr;
 
@@ -75,10 +75,10 @@
         isNumber    = function(who) { return ! isUndefined(who)
             && 'number' === typeof who },
         isFunction  = $.isFunction,
-        isDom       = function(who) { $.isPlainObject(who) && who.nodeType > 0 },
+        isDom       = function(who) { return $.isPlainObject(who) && who.nodeType > 0 },
 
         /* 抛出未实现异常, 仅用于开发期间防止无效的调用 */
-        throwNiyError = function() { throw new Error( 'Not implement yet!' ); };
+        throwNiyError = function() { throw new Error( 'Not implement yet!' ) };
 
     function _parseArgs(url, data, success, error, dataType) {
         if ( isFunction( data ) ) {
@@ -328,7 +328,7 @@
      *     } );
      * </pre>
      *
-     * @param checker
+     * @param checker 一个 fn 需要有有效的返回值
      * @param callback
      * @param context
      */
@@ -337,7 +337,7 @@
         var watcher = function() {
             checker.call( ctx )
                 ? callback.call( ctx )
-                : setTimeout( watcher, 1e3 );
+                : setTimeout( watcher, 1e3 );   /* 目前检测间隔为 1 秒 */
         };
 
         watcher();
@@ -1143,6 +1143,7 @@
     }
 
     function _isLocked() {
+        /*_dumpTrans('Lock');*/
         return _in_transaction_;
     }
 
@@ -1196,8 +1197,8 @@
     };
 
     /* 构建一个 hash 串用于更新至浏览器 */
-    function _buildHashWithBrowser(fragment) {
-        /* #!id:args */
+    function _buildInnerHashByFragment(fragment) {
+        /*
         var x = [ _FRAGMENT_HASH_PREFIX, fragment[ _HASH ] ];
 
         fragment[ _ARGS ]
@@ -1207,10 +1208,30 @@
             );
 
         return x.join( '' )
+        */
+
+        var data = {};
+        data[ _HASH ] = fragment[ _HASH ];
+        data[ _ARGS ] = fragment[ _ARGS ];
+
+        return _buildInnerHash( data )
+    }
+
+    function _buildInnerHash(data) {
+        /* #!id:args */
+        var x = [ _FRAGMENT_HASH_PREFIX, data[ _HASH ] ];
+
+        data[ _ARGS ]
+        && (
+            x.push( _ARG_DELIMITER ),
+            x.push( _argsUrlify( data[ _ARGS ] ) )
+        );
+
+        return x.join( '' )
     }
 
     function _syncHashToBrowser(fragment) {
-        location.hash = _buildHashWithBrowser(fragment)
+        location.hash = _buildInnerHashByFragment(fragment)
     }
 
     function _go(id, args, from_uri) {
@@ -1326,16 +1347,38 @@
 
     var ALWAYS_POST_COMMIT_ON_BACK = ! 0;
 
+    var _trans_tag_stamp;
+
     function _beginTrans() {
+        /*_dumpTrans( 'Begin' );*/
         _in_transaction_ || (_in_transaction_ = ! 0);
         /*console.log("beginTrans: %s", _in_transaction_);*/
     }
 
     function _endTrans() {
-        _in_transaction_ && (_in_transaction_ = ! 1);
+        /*_dumpTrans( 'End' );*/
+        /* FIXME(XCL): 这里绝对解释无论是否已处于锁态 */
+        _in_transaction_ = ! 1;
+
+        /*_in_transaction_ && (_in_transaction_ = ! 1);*/
+
+        _onTransEnded();
 
         /*$lr.dev && console.timeEnd('Trans');
         console.log("endTrans: %s", _in_transaction_);*/
+    }
+
+    function _dumpTrans(tag) {
+        if ( 'Begin' == tag ) {
+            _trans_tag_stamp = 'trans-' + ( new Date() ).getTime();
+            console.time( _trans_tag_stamp );
+            console.log("Dump-Trans: %s %s at ", tag, _in_transaction_, _trans_tag_stamp);
+        } else if ( 'End' == tag ) {
+            console.log("Dump-Trans: %s %s", tag, _in_transaction_);
+            console.timeEnd(_trans_tag_stamp)
+        } else {
+            console.log("Dump-Trans: %s %s", tag, _in_transaction_);
+        }
     }
 
     /* currentlyFragment */
@@ -1421,7 +1464,7 @@
         /* console.log( '## setupCurrentState ' + !! from_uri ); */
         var state   = _newState(),
             title   = target[ _TITLE ],
-            hash    = _buildHashWithBrowser( target );
+            hash    = _buildInnerHashByFragment( target );
 
         if ( from_uri )
             history.replaceState(state, title, hash);
@@ -1449,7 +1492,7 @@
         history.replaceState(
             state,
             initial[ _TITLE ],
-            _buildHashWithBrowser( initial ) );
+            _buildInnerHashByFragment( initial ) );
 
         _currentState = history.state;
     }
@@ -2378,6 +2421,11 @@
     /* 如果跳转到其它页面当后退至当前页面则可能 stack 丢失(RELOAD) */
     var _popStateHandler = function(event) {
         /*$lr.dev && console.log( "history entries: %s", history.length );*/
+        /* FIXME(XCL): 如果正在进行 trans 时触发 pop state 则说明是为了修正来自用户的
+                       快速 touch 操作来的 fargmnet 无跳转的问题, 此时仅仅是进行
+                       pop back 操作 */
+        /*if ( _isLocked() )
+            return;*/
 
         if ( ! _checkStateEvent( event ) )
             return;
@@ -2416,31 +2464,94 @@
         ? _resolveHash( location.hash )
         : null;
 
+    var _onTransEnded = function() {
+        _handleDelayedHashChangeEvent();
+    };
+
+    var _handleDelayedHashChangeEvent = function() {
+        if ( ! _delayed_hash_change_event )
+            return;
+
+        var oldInnerHash = _delayed_hash_change_event.oldInnerHash,
+            currentlyRawHash = _delayed_hash_change_event.newRawHash;
+
+        /* 标记 delayed event 已处理 */
+        _delayed_hash_change_event = undefined;
+
+        /* 是否为 page hash */
+        _isViewHash( currentlyRawHash )
+            && _handleHashChange( oldInnerHash, _resolveHash( currentlyRawHash ) )
+    };
+
+    function _postDelayedHashChangeEvent(oldInnerHash, newRawHash) {
+        _delayed_hash_change_event = {
+            oldInnerHash: oldInnerHash,
+            newRawHash: newRawHash };
+    }
+
+    var _roll_back_for_uri_nav = function() {
+        /*history.back();*/
+        /*var rewind = _convertCurrentlyHashToInner();
+         rewind && ( location.hash = _buildInnerHash( rewind ) );*/
+    };
+
+    var _detect_backward_for_uri = undefined;
+
+    var _roll_back;
+
+    /**
+     * 用于对我们再次包装的 HashChangeEvent 进行延迟处理.
+     *
+     * @type {object}
+     * @private
+     */
+    var _delayed_hash_change_event = undefined;
+
     /**
      * 当 hash 变更时调用该 fn.
      * @private
      */
-    var _onHashChanged = function() {
-        /*$lr.dev && console.log( 'onHashChange::cs -> ' + JSON.stringify( _currentState )
+    var _onHashChanged = function(hashChangeEvent) {
+        /* $lr.dev && console.log( 'onHashChange::cs -> ' + JSON.stringify( _currentState )
             + ' ls -> ' + JSON.stringify( _detect_backward_for_uri )
-            + ' ' + new Date().getTime() );*/
+            + ' ' + new Date().getTime() ); */
+
+        var oldInnerHash = _convertCurrentlyHashToInner(),
+            /* 当前 Browser 中的 hash */
+            currentlyRawHash = location.hash;
+
         /* TODO(XCL): Check for transaction timed out... */
-        if ( _isLocked() ) return;
+        if ( _isLocked() ) {
+            /* TODO(XCL): postDelayed */
+            _postDelayedHashChangeEvent( oldInnerHash, currentlyRawHash );
 
-        var oldHash = _current
-            ? { hash: _current[ _HASH ],
-                args: _current[ _ARGS ] }
-            : null;
+            /*console.log( 'Break now: o : %s n : %s ', hashChangeEvent.oldURL, location.hash );*/
+            /*if ( _roll_back != hashChangeEvent.newURL ) {
+                _roll_back_for_uri_nav();
+            }*/
 
-        /* 当前 Browser 中的 hash */
-        var hashNow = location.hash;
+            return;
+        }/* else {
+            _roll_back = null;
+        }*/
 
         /* 是否为 page hash */
-        _isViewHash( hashNow )
-            && _handleHashChange( oldHash, _resolveHash( hashNow ) )
+        _isViewHash( currentlyRawHash )
+            && _handleHashChange( oldInnerHash, _resolveHash( currentlyRawHash ) )
     };
 
-    var _detect_backward_for_uri = undefined;
+    var _convertCurrentlyHashToInner = function() {
+        var data = null;
+
+        if ( _current ) {
+            data = {};
+
+            data[_HASH] = _current[_HASH];
+            data[_ARGS] = _current[_ARGS];
+        }
+
+        return data;
+    };
 
     /* TODO: To detect the history back act. */
     var _handleHashChange = function(oldHash, newHash) {
