@@ -1266,7 +1266,7 @@
         else {
             animation = fromUri;
             fromUri = args;
-            /*args = undefined;*/
+            args = undefined;
         }
 
         /* id, args, animation */
@@ -1535,6 +1535,7 @@
             else
                 animation = _getAnimation( next );
 
+
             transit = _buildTransition( animation, _FORWARD );
             postCommitTrans = !! transit.rear;
         }
@@ -1646,7 +1647,7 @@
      * @private
      */
     function _getAnimation(fragment) {
-        if ( ! _ANIMATION in fragment )
+        if ( ! (_ANIMATION in fragment) )
             return fx.slide;
 
         return fragment[ _ANIMATION ];
@@ -2871,6 +2872,15 @@
             _goNext( id, hash[ _ARGS ], fromUser, fromUri );
     };
 
+    /**
+     * 前往下一步 fragment.
+     *
+     * @param id
+     * @param args (optional)
+     * @param fromUser (optional)
+     * @param fromUri (optional)
+     * @private
+     */
     function _goNext(id, args, fromUser, fromUri) {
         /* 更新 args */
         _overrideArgs( id, args );
