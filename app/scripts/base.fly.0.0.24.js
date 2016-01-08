@@ -75,7 +75,9 @@
         isNumber    = function(who) { return ! isUndefined(who)
             && 'number' === typeof who },
         isFunction  = $.isFunction,
-        isDom       = function(who) { return $.isPlainObject(who) && who.nodeType > 0 },
+        /* 判断是否为 DOM */
+        isDom       = function(who) { return $.isPlainObject(who)
+            && who.nodeType > 0 },
 
         /* 抛出未实现异常, 仅用于开发期间防止无效的调用 */
         throwNiyError = function() { throw new Error( 'Not implement yet!' ) };
@@ -158,7 +160,8 @@
         } : emptyFn,
         error: console ? function(msg) {
             lairen.dev && console.error( msg )
-        } : emptyFn */
+        } : emptyFn
+        */
     };
 
     /**
@@ -1755,7 +1758,9 @@
         }
     }
 
+    /* 目前我们支持 4 种切换效果 */
     var fx = { slide: 'slide', cover: 'cover', fade: 'fade', none: 'none' };
+
     /* 将 fx 置为全局可见 */
     win.fx = fx;
 
@@ -1784,8 +1789,8 @@
     function _show(target, transit/*, fromStack*/) {
         var layout = target[ _EL_ ][ _LAYOUT_ ];
 
-        $lr.dev && console.log( "<< show # %s, %s",
-            target[ _ID ], transit.front );
+        /*$lr.dev && console.log( "<< show # %s, %s",
+            target[ _ID ], transit.front );*/
 
         /* Show the dom */
         layout.show();
@@ -1812,7 +1817,7 @@
 
         /*$lr.isUndefined( transit ) && (transit = _TRANSITION_SLIDE);*/
 
-        $lr.dev && console.log( ">> hide # %s, %s", target[ _ID ], transit.rear );
+        /*$lr.dev && console.log( ">> hide # %s, %s", target[ _ID ], transit.rear );*/
 
         /*$lr.dev && console.time('EndAnimation');*/
 
@@ -2624,10 +2629,11 @@
 
     /**
      * BUG(s):
-     * $lairen.get -> error
-     * finish 销毁过晚
-     * 快速点击 UI 将不可见
-     * 多实首次 URI 加载, 不走 multitask mode
+     * $lairen.get -> error;
+     * finish 销毁过晚;
+     * 快速点击 UI 将不可见;
+     * 多实首次 URI 加载, 不走 multitask mode;
+     * 通过 beginWith multitask 根实例可能不会被创建;
      */
 
     /**
@@ -2708,9 +2714,11 @@
     /* 如果跳转到其它页面当后退至当前页面则可能 stack 丢失(RELOAD) */
     var _popStateHandler = function(event) {
         /*$lr.dev && console.log( "history entries: %s", history.length );*/
-        /* FIXME(XCL): 如果正在进行 trans 时触发 pop state 则说明是为了修正来自用户的
-                       快速 touch 操作来的 fargmnet 无跳转的问题, 此时仅仅是进行
-                       pop back 操作 */
+        /**
+         * FIXME(XCL): 如果正在进行 trans 时触发 pop state 则说明是为了修正来自用户的
+         *              快速 touch 操作来的 fargmnet 无跳转的问题, 此时仅仅是进行
+         *              pop back 操作
+         */
         /*if ( _isLocked() )
             return;*/
 
@@ -2799,9 +2807,10 @@
      * @private
      */
     var _onHashChanged = function(hashChangeEvent) {
-        /* $lr.dev && console.log( 'onHashChange::cs -> ' + JSON.stringify( _currentState )
-            + ' ls -> ' + JSON.stringify( _detect_backward_for_uri )
-            + ' ' + new Date().getTime() ); */
+        /*$lr.dev && console.log( "onHashChange::cs -> %s ls -> %s ",
+            JSON.stringify( _currentState ),
+            JSON.stringify( _detect_backward_for_uri ),
+            new Date().getTime() );*/
 
         var oldInnerHash = _convertCurrentlyHashToInner(),
             /* 当前 Browser 中的 hash */
@@ -2842,10 +2851,10 @@
 
     /* TODO: To detect the history back act. */
     var _handleHashChange = function(oldHash, newHash) {
-        $lr.dev && console.log( "onHashChanged %s %s %s"
+        /*$lr.dev && console.log( "onHashChanged %s %s %s"
             , JSON.stringify( oldHash )
             , JSON.stringify( newHash )
-            , new Date().getTime() );
+            , new Date().getTime() );*/
 
         /* 是否 hash 真的需要更新 */
         /* 暂时使用 History API */
