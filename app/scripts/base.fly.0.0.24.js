@@ -2627,6 +2627,7 @@
      * $lairen.get -> error
      * finish 销毁过晚
      * 快速点击 UI 将不可见
+     * 多实首次 URI 加载, 不走 multitask mode
      */
 
     /**
