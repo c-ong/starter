@@ -9,7 +9,7 @@
             <!--src="libs/mdl/material.js?1.0.5"></script>-->
     <!--<link rel="stylesheet" href="libs/mdl/material.css?1.0.5">-->
 
-    <link rel="stylesheet" href="styles/base.css?3">
+    <link rel="stylesheet" href="styles/base.0.0.24.css?3">
     <link rel="stylesheet" href="styles/app.css?2">
     <!--<script type="text/javascript" charset="utf-8"
             src="scripts/base.js.old?2"></script>-->
@@ -30,7 +30,7 @@
 <script type="text/javascript" charset="utf-8"
         src="libs/zepto/fx.js?1.1.6"></script>
 <script type="text/javascript" charset="utf-8"
-        src="scripts/base.fly.js?6"></script>
+        src="scripts/base.fly.0.0.24.js?6"></script>
 
 <script defer>
     var dialog_content = '<div onclick="lairen.dialog().show()" style="border: 1px solid red; padding: 10px;">点我再打开一个 Dialog</div>'
@@ -50,7 +50,7 @@
         // 可以通过该字段来指定默认内容也可以调用 render 方法来填充内容
         html: '<div id="starter"><div style="padding: 16px 0;">Dialog & View Switcher 使用演示</div>' +
 
-        '<button onclick="$fragment.go(\'view.about\', {key:\'modify\'})">加载并呈现 About UI & Args->></button>' +
+        '<button onclick="go(\'view.about\', {key:\'modify\'})">加载并呈现 About UI & Args->></button>' +
 
         '<button onclick="alert()">系统 Dialog</button>' +
 
@@ -78,12 +78,15 @@
     $fragment.define('view.about',
             {
                 title: 'about',
+                animation: fx.fade,
 
                 // 可以通过该字段来指定默认内容也可以调用 render 方法来填充内容
                 html: '<div id="starter"><div style="padding: 16px 0;">View 后退使用演示</div>' +
-                '<button onclick="$fragment.back()">后退 <<-</button>' +
-                '<button onclick="$fragment.go(\'login\')">加载并呈现 Login UI ->></button>' +
+                '<button onclick="back()">后退 <<-</button>' +
+                '<button onclick="go(\'login\')">加载并呈现 Login UI ->></button>' +
                 '</div>',
+
+                /*animation: fx.slide,*/
 
                 onStart: function () {
 //                    console.log('onStart')

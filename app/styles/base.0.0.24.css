@@ -112,139 +112,167 @@ body {
 
 /*------------------------------------------------------*/
 /* 部分 Android 动画不流畅,固此我们使用 translateX 而不是 translate3d */
-@-webkit-keyframes fragment-enter {
+
+/* Fragment Slide 动作定义 */
+@-webkit-keyframes fragment-slide-enter {
     from {
-        /*will-change: transform;*/
         -webkit-transform: translateX(100%);
         transform: translateX(100%);
-        /*; opacity: .1*/ }
+    }
     to {
-        /*will-change: transform;*/
         -webkit-transform: translateX(0);
         transform: translateX(0);
-        /*; opacity: 1*/ }
+    }
 }
-@keyframes fragment-enter {
+@keyframes fragment-slide-enter {
     from {
-        /*will-change: transform;*/
         -webkit-transform: translateX(100%);
         transform: translateX(100%);
-        /*; opacity: .1*/ }
+    }
     to {
-        /*will-change: transform;*/
         -webkit-transform: translateX(0);
         transform: translateX(0);
-        /*; opacity: 1*/ }
+    }
 }
-@-webkit-keyframes fragment-pop-exit {
+@-webkit-keyframes fragment-slide-pop-exit {
     from {
-        /*will-change: transform;*/
         -webkit-transform: translateX(0);
         transform: translateX(0);
-        /*; opacity: .8*/ }
+    }
     to {
-        /*will-change: transform;*/
         -webkit-transform: translateX(-20%);
         transform: translateX(-20%);
-        /*; opacity: 1*/
     }
 }
-@keyframes fragment-pop-exit {
+@keyframes fragment-slide-pop-exit {
     from {
-        /*will-change: transform;*/
         -webkit-transform: translateX(0);
         transform: translateX(0);
-        /*; opacity: .8*/ }
+    }
     to {
-        /*will-change: transform;*/
         -webkit-transform: translateX(-20%);
         transform: translateX(-20%);
-        /*; opacity: 1*/ }
+    }
 }
-@-webkit-keyframes fragment-pop-enter {
+@-webkit-keyframes fragment-slide-pop-enter {
     from {
-        /*will-change: transform;*/
         -webkit-transform: translateX(-20%);
         transform: translateX(-20%);
-        /*opacity: 1*/
     }
     to {
-        /*will-change: transform;*/
         -webkit-transform: translateX(0);
         transform: translateX(0);
-        /*opacity: .8*/
     }
 }
-@keyframes fragment-pop-enter {
+@keyframes fragment-slide-pop-enter {
     from {
-        /*will-change: transform;*/
         -webkit-transform: translateX(-20%);
         transform: translateX(-20%);
-        /*opacity: 1*/
     }
     to {
-        /*will-change: transform;*/
         -webkit-transform: translateX(0);
         transform: translateX(0);
-        /*opacity: .8*/
     }
 }
-@-webkit-keyframes fragment-exit {
+@-webkit-keyframes fragment-slide-exit {
     from {
-        /*will-change: transform;*/
         -webkit-transform: translateX(0);
         transform: translateX(0);
-        /*; opacity: 1*/
     }
     to {
-        /*will-change: transform;*/
         -webkit-transform: translateX(100%);
         transform: translateX(100%);
-        /*; opacity: .8*/
     }
 }
-@keyframes fragment-exit {
+@keyframes fragment-slide-exit {
     from {
-        /*will-change: transform;*/
         -webkit-transform: translateX(0);
         transform: translateX(0);
-        /*; opacity: 1*/
     }
     to {
-        /*will-change: transform;*/
         -webkit-transform: translateX(100%);
         transform: translateX(100%);
-        /*; opacity: .8*/
     }
+}
+
+/* Fragment Cover 动作定义 */
+@keyframes fragment-cover-enter {
+    from {
+        transform: translateY(80%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+
+@keyframes fragment-cover-pop-exit {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: .8;
+    }
+}
+
+@keyframes fragment-cover-pop-enter {
+    from {
+        opacity: .8;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fragment-cover-exit {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(20%);
+        opacity: 0;
+    }
+}
+
+/* Fragment Fade 效果定义 */
+@keyframes fragment-fade-enter {
+    from {
+        opacity: .5;
+    }
+    to {
+        opacity: 1;
+    }
+}
+@keyframes fragment-fade-pop-exit {
+    /*none*/
+}
+@keyframes fragment-fade-pop-enter {
+    from {
+        opacity: .5;
+    }
+    to {
+        opacity: 1;
+    }
+}
+@keyframes fragment-fade-exit {
+    /*none*/
 }
 
 /*------------------------------------------------------*/
-
+/* Dialog mask fade-in-out 效果定义 */
 @-webkit-keyframes dialog-mask-in {
     from {
-        /*will-change: transform;*/
-        /*-webkit-transform: translatex(0, 0, 0);*/
-        /*transform: translatex(0, 0, 0);*/
         background-color: rgba(0, 0, 0, .0)
     }
     to {
-        /*will-change: transform;*/
-        /*-webkit-transform: translatex(0, 0, 0);*/
-        /*transform: translatex(0, 0, 0);*/
         background-color: rgba(0, 0, 0, .4)
     }
 }
 @-webkit-keyframes dialog-mask-out {
     from {
-        /*will-change: transform;*/
-        /*-webkit-transform: translatex(0, 0, 0);*/
-        /*transform: translatex(0, 0, 0);*/
         background-color: rgba(0, 0, 0, .4)
     }
     to {
-        /*will-change: transform;*/
-        /*-webkit-transform: translatex(0, 0, 0);*/
-        /*transform: translatex(0, 0, 0);*/
         background-color: rgba(0, 0, 0, .0)
     }
 }
