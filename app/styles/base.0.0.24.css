@@ -226,11 +226,11 @@ body {
 @keyframes fragment-cover-exit {
     from {
         transform: translateY(0);
-        opacity: 1;
+        /*opacity: 1;*/
     }
     to {
-        transform: translateY(20%);
-        opacity: 0;
+        transform: translateY(100%);
+        /*opacity: 0;*/
     }
 }
 
