@@ -30,7 +30,7 @@
 <script type="text/javascript" charset="utf-8"
         src="libs/zepto/fx.js?1.1.6"></script>
 <script type="text/javascript" charset="utf-8"
-        src="scripts/base.fly.0.0.24.js?6"></script>
+        src="scripts/base.fly.0.0.25.js?6"></script>
 
 <script defer>
     var dialog_content = '<div onclick="lairen.dialog().show()" style="border: 1px solid red; padding: 10px;">点我再打开一个 Dialog</div>'
@@ -71,11 +71,11 @@
         }
     };
     // 定义一个 fragment
-    var home = $fragment.define('view.home', config);
+    var home = $Fragment.define('view.home', config);
 
     // ------------------------------------------------------------------------
 
-    $fragment.define('view.about',
+    $Fragment.define('view.about',
             {
                 title: 'about',
                 animation: fx.fade,
@@ -83,6 +83,8 @@
                 // 可以通过该字段来指定默认内容也可以调用 render 方法来填充内容
                 html: '<div id="starter"><div style="padding: 16px 0;">View 后退使用演示</div>' +
                 '<button onclick="back()">后退 <<-</button>' +
+                '<br/>' +
+                '<a href="#!-">超链接亦可后退(#!-) <<-</a>' +
                 '<button onclick="go(\'login\')">加载并呈现 Login UI ->></button>' +
                 '</div>',
 
@@ -136,12 +138,12 @@
         },
     };
     // 定义一个 fragment
-    var login = $fragment.define('login', config_login);
+    var login = $Fragment.define('login', config_login);
 
     // ------------------------------------------------------------------------
 
     // 设置默认界面
-    $fragment.beginWith('view.home');
+    $Fragment.beginWith('view.home');
 
 </script>
 </html>
