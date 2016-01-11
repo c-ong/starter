@@ -142,6 +142,16 @@
 
     // ------------------------------------------------------------------------
 
+    $Fragment.config({
+        onFragmentChangeBefore: function() {
+            console.dir( arguments );
+        },
+
+        onCurrentlyFragmentContentLoaded: function() {
+            console.log('onCurrentlyFragmentContentLoaded');
+        }
+    });
+
     // 设置默认界面
     $Fragment.bootstrap('view.home');
 

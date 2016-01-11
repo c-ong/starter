@@ -1280,7 +1280,7 @@
             throw new Error( "Args can't be null#" + args );
         }
 
-        ordered = {};
+        ordered = {};$
 
         keys.sort().forEach( function(key) {
             ordered[ key ] = args[ key ];
