@@ -1061,7 +1061,7 @@
     }
 
     function _finishAndGo(id, args) {
-        if ( _isLocked() ) return;
+        if ( _didFragmentTransFinished() ) return;
 
         /* TODO: current -> update hash direct */
         _exist( id )
@@ -1112,7 +1112,7 @@
         resume( next );
 
         /* 呈现下一个 fragment */
-        _show( next, _TRANSITION_SLIDE, _FROM_STACK_NO );
+        _show( next, /*_TRANSITION_SLIDE, */_FROM_STACK_NO );
 
         try {
             /* 销毁 current */
@@ -1156,7 +1156,7 @@
 
     }
 
-    function _isLocked() {
+    function _didFragmentTransFinished() {
         /*_dumpTrans('Lock');*/
         return _in_transaction_;
     }
@@ -1166,7 +1166,7 @@
      * @returns {boolean}
      */
     function canBack() {
-        return ! _isLocked() && 0 in _backStack
+        return ! _didFragmentTransFinished() && 0 in _backStack
     }
 
     /**
@@ -1259,7 +1259,7 @@
      * @private
      */
     function _go(id, args, fromUri, animation) {
-        if ( _isLocked() )
+        if ( _didFragmentTransFinished() )
             return;
 
         if ( ! _exist( id ) )
@@ -1301,6 +1301,7 @@
 
     /* --------------------------------------------------------------------- */
 
+    /* TODO(XCL): */
     function checkRuntime() {
         /* Object.keys && onhashchange && onpopstate && more... */
     }
@@ -1385,11 +1386,14 @@
 
     /* --------------------------------------------------------------------- */
 
-    var _in_transaction_ = ! 1;
+    /* 标识是否正在进行界面切换 */
+    var _in_transaction_ = ! 1,
 
+        /* 记录开始切换界面的时间 */
+        _trans_tag_stamp;
+
+    /* 标识永远后置提交事务 */
     var ALWAYS_POST_COMMIT_ON_BACK = ! 0;
-
-    var _trans_tag_stamp;
 
     function _beginTrans() {
         /*_dumpTrans( 'Begin' );*/
@@ -1451,8 +1455,6 @@
         return fx && fx in win.fx ? fx : win.fx.slide
     }
 
-    var _TRANSITION_UNSET = { rear: 0, front: 0 };
-
     /**
      * 是否没有切换效果?
      *
@@ -1464,17 +1466,13 @@
         return _TRANSITION_UNSET === transition;
     }
 
-    /* 致导方向 */
-    var _FORWARD = 1,
-        _BACKWARD = _FORWARD - 1;
-
     function _buildTransition(fx, forward) {
         /* enter, popExit, popEnter, exit */
 
         if ( ! $lr.isString( fx ) )
             return _TRANSITION_NONE;
 
-        var config = _transits[ _resolveFx( fx ) ];
+        var schema = _transits[ _resolveFx( fx ) ];
 
         /**
          *              front        rear
@@ -1485,13 +1483,13 @@
         var checkRear  = forward ? 'popExit' : 'exit',
             checkFront = forward ? 'enter'   : 'popEnter';
 
-        var rear  = config[checkRear ] && _buildAnimationName( fx, forward, 1 );
-        var front = config[checkFront] && _buildAnimationName( fx, forward, 0 );
+        var rear  = schema[checkRear ] && _buildAnimationName( fx, forward, 1 );
+        var front = schema[checkFront] && _buildAnimationName( fx, forward, 0 );
 
         /*var ret = { rear: rear, front: front };
         console.log(JSON.stringify( ret ));*/
 
-        return { rear: rear, front: front }/*ret*/
+        return { rear: rear, front: front };/*ret*/
     }
 
     function _check() {
@@ -1751,21 +1749,8 @@
 
     /* --------------------------------------------------------------------- */
 
-    var _TRANSIT_YES = ! 0;
-    var _TRANSIT_NONE = ! _TRANSIT_YES;
-
-    function _configAnimation(/* enter, popExit, popEnter, exit */) {
-        if ( 1 == arguments.length )
-            return arguments[ 0 ];
-
-        return {
-            /* forward */
-            enter:      arguments[ 0 ], popExit:    arguments[ 1 ],
-
-            /* backward */
-            popEnter:   arguments[ 2 ], exit:       arguments[ 3 ]
-        }
-    }
+    var _TRANSIT_YES    = ! 0;
+    var _TRANSIT_NONE   = ! _TRANSIT_YES;
 
     /* 目前我们支持 4 种切换效果 */
     var fx = { slide: 'slide', cover: 'cover', fade: 'fade', none: 'none' };
@@ -1773,27 +1758,52 @@
     /* 将 fx 置为全局可见 */
     win.fx = fx;
 
-    /* 指定切换动作对应的4个环节是否需要 */
+    function _makeAnimationSchema(/* enter, popExit, popEnter, exit */) {
+        if ( 1 == arguments.length )
+            return arguments[ 0 ];
+
+        return {
+            /* forward */
+            enter:    arguments[ 0 ],   popExit: arguments[ 1 ],
+
+            /* backward */
+            popEnter: arguments[ 2 ],   exit:    arguments[ 3 ]
+        }
+    }
+
+    /**
+     * 指定切换动作对应的4个环节是否需要
+     * @type {{AnimationSchema}}
+     * @private
+     */
     var _transits = {};
 
-    _transits[fx.slide] = _configAnimation(
+    _transits[fx.slide] = _makeAnimationSchema(
         _TRANSIT_YES, _TRANSIT_YES,
         _TRANSIT_YES, _TRANSIT_YES );
-    _transits[fx.cover] = _configAnimation(
+    _transits[fx.cover] = _makeAnimationSchema(
         _TRANSIT_YES, _TRANSIT_YES,
         _TRANSIT_YES, _TRANSIT_YES );
-    _transits[fx.fade] = _configAnimation(
+    _transits[fx.fade] = _makeAnimationSchema(
         _TRANSIT_YES, _TRANSIT_NONE,
         _TRANSIT_YES, _TRANSIT_NONE );
-    _transits[fx.none] = _configAnimation(
+    _transits[fx.none] = _makeAnimationSchema(
         _TRANSIT_NONE );
 
     /* OPEN, CLOSE, FADE, SLIDE */
-    var _TRANSITION_SLIDE   = 1,
+    var /*_TRANSITION_SLIDE   = 1,*/
         _TRANSITION_NONE    = 0,
 
+        /* 进栈 或 出栈 */
         _FROM_STACK_YES     = 1,
         _FROM_STACK_NO      = 0;
+
+    /* 制导方向(Forward OR Backward) */
+    var _FORWARD            = 1,
+        _BACKWARD           = _FORWARD - 1;
+
+    /* 界面切换效果没设置 */
+    var _TRANSITION_UNSET = { rear: 0, front: 0 };
 
     function _show(target, transit/*, fromStack*/) {
         var layout = target[ _EL_ ][ _LAYOUT_ ];
@@ -1825,9 +1835,7 @@
         var layout = target[ _EL_ ][ _LAYOUT_ ];
 
         /*$lr.isUndefined( transit ) && (transit = _TRANSITION_SLIDE);*/
-
         /*$lr.dev && console.log( ">> hide # %s, %s", target[ _ID ], transit.rear );*/
-
         /*$lr.dev && console.time('EndAnimation');*/
 
         if ( transit.rear ) {
@@ -2179,11 +2187,9 @@
         if ( _HTML in config ) {
             frag[ _HTML ] = config[ _HTML ];
             _invokeRender( frag, frag );
-            /* _renderWithHtml.call( frag, config ); */
         } else if ( _URL in config ) {
             frag[ _URL ] = config[ _URL ];
             _invokeRender( frag, frag );
-            /* _renderWithUrl.call( frag, config ); */
         }
         /* } */
 
@@ -2213,10 +2219,9 @@
      */
     function _settleAnimation(fragment, config) {
         if ( ! _ANIMATION in config )
-            return
+            return;
 
-        var animation = config[ _ANIMATION ];
-        fragment[_ANIMATION] = _resolveFx( animation );
+        fragment[_ANIMATION] = _resolveFx( config[ _ANIMATION ] );
     }
 
     /**
@@ -2446,8 +2451,12 @@
         && (
             /* 更新 args */
             _overrideArgs( fragment[ _ID ], originArgs ),
-                _go( fragment[ _ID ] )
+            _go( fragment[ _ID ] )
         )
+    }
+
+    /* TODO(XCL): Just dumping some state or data Of the fragment(s)... */
+    function dump() {
     }
 
     /* --------------------------------------------------------------------- */
@@ -2482,13 +2491,20 @@
          *
          *      config {
          *           title:    'Untitled',    // 标题用于显示在支持的浏览器上
+         *
          *           multitask: 1,            // 标明该 fragment 是否支持多实例,
          *                                    // 既 Multiple Instances, 此项与
          *                                    // clearContentOnLeave 互斥
+         *
          *           args:     {key: 'value'} // 参数对儿
+         *
          *           backable: false,         // 是否可后退
+         *
          *           requires: {String/[]},   // 依赖项
+         *
          *           html/url: 'URL or HTML', // 完整 URL 或 HTML 片段
+         *
+         *           trigger: { on: 'home', state: 'present', do: 'preload' },
          *
          *           onAttach: function() {
          *              // fragment 容器被添加到 DOM 中后会调用
@@ -2569,11 +2585,12 @@
         define:     $lr.fragment,
 
         /**
-         * 构建并呈现 fragment 如果当前不含有效的 hash 则使用指定的作为初始 fragment.
+         * 启动 fragment 如果当前 location.hash 不含有效的 hash 则使用指定的作为初始 fragment.
+         *
          * @param id
          * @param args
          */
-        beginWith:  function(id, args) {
+        bootstrap:  function(id, args) {
             _ORIGIN_HASH || _go( id, args, /* from_uri */0 )
         },
 
@@ -2621,10 +2638,7 @@
          * @param id
          * @param args
          */
-        update:     function(id, args) {
-            // TODO:
-            $lr.throwNiyError();
-        },
+        update:     $lr.throwNiyError,
 
         /**
          * 销毁当前 fragment & 返回上一级.
@@ -2653,7 +2667,9 @@
      * @type {function}
      */
     win.go          = win.$Fragment.go,
+    /* 以没有切换效果的模式前往下一个 fragment */
     win.goFast      = win.$Fragment.goFast = win.goWithoutFx = win.$Fragment.goWithoutFx,
+    /* 后退操作 */
     win.back        = win.$Fragment.back;
 
     /* --------------------------------------------------------------------- */
@@ -2669,6 +2685,8 @@
 
     /**
      * TODO:
+     * observer for load trigger(Once OR Ever)(Loading Strategy)
+     * {fade:true}
      * bind
      * fragment listener
      * props
@@ -2859,7 +2877,7 @@
             newRawHash    = location.hash;
 
         /* TODO(XCL): Check for transaction timed out... */
-        if ( _isLocked() ) {
+        if ( _didFragmentTransFinished() ) {
             /* TODO(XCL): postDelayed */
             _postDelayedHashChangeEvent( oldInnerHash, newRawHash );
 
@@ -2886,21 +2904,22 @@
      * @private
      */
     function _handleHashChange(oldInnerHash, /*currently*/newRawHash) {
-        console.log( 'handleHashChange: [OLD] %s, [NEW] %s, %s', JSON.stringify(oldInnerHash), newRawHash, _isInnerRawHash(newRawHash) );
+        /*console.log( 'handleHashChange: [OLD] %s, [NEW] %s, %s',
+        JSON.stringify(oldInnerHash), newRawHash, _isInnerRawHash(newRawHash) );*/
         if ( ! _isInnerRawHash( newRawHash ) )
             return;
 
-        _processInnerHashChangedEvent( oldInnerHash, newRawHash );
+        _processInnerHashChangedEvent( oldInnerHash, newRawHash )
     }
 
     /* TODO: To detect the history back act. */
     function _processInnerHashChangedEvent(oldInnerHash, /*currently*/newRawHash) {
         if ( _isMagicBackHash( newRawHash ) ) {
-            _triggerGoBack();
+            _triggerGoBack()
         }
         /* 是否为 page hash */
         else if ( _isFragmentHash( newRawHash ) ) {
-            console.log( 'Changed: %s, %s', JSON.stringify( oldInnerHash ), newRawHash );
+            /*console.log( 'Changed: %s, %s', JSON.stringify( oldInnerHash ), newRawHash );*/
 
             /* TODO(XCL): Filtering and Sanitizing */
             var resolvedHash = _resolveHash( newRawHash );
@@ -3010,6 +3029,7 @@
         && window.addEventListener( _LISTEN_WINDOW_POP_STATE,
         _popStateHandler );
 
+    /* 配置 CSS Transform 硬件加速 */
     (function(viewport) {
         /*setGPUAcceleratedCompositingEnabled( viewport, 0 );*/
         /*setGPUAcceleratedCompositingEnabled( viewport, ! ($lr.os.ios && $lr.browser.qqx5) );*/
