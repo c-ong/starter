@@ -1267,6 +1267,10 @@
         location.hash = _buildInnerHashByFragment(fragment)
     }
 
+    function _requestGo() {
+
+    }
+
     /* TODO(XCL): Renaming the fn name to forward */
     /**
      * 进行 fragment 切换操作.
@@ -1864,11 +1868,17 @@
 
     /* --------------------------------------------------------------------- */
 
+    /* 标识是否有切换效果 */
     var _TRANSIT_YES    = ! 0;
     var _TRANSIT_NONE   = ! _TRANSIT_YES;
 
     /* 目前我们支持 4 种切换效果 */
-    var fx = { slide: 'slide', cover: 'cover', fade: 'fade', none: 'none' };
+    var fx = {
+        slide:  'slide', /* 左右滑动切换   */
+        cover:  'cover', /* 从下至上的覆盖  */
+        fade:   'fade',  /* fade-in-out  */
+        none:   'none'   /* 无切换效果     */
+    };
 
     /* 将 fx 置为全局可见 */
     win.fx = fx;
@@ -1944,6 +1954,7 @@
      * @param fromStack 是否从 stack 中取得 fragment
      * @param endTransNeeded 是否需要结束 trans
      * @param transit 动画
+     * @param firer 用于触发事件(optional)
      * @private
      */
     function _hide(target, /*fromStack, endTransNeeded,*/ transit, firer) {
@@ -2229,7 +2240,7 @@
         var frag = _exist( id ) ? getFragment( id ) : {};
 
         /* 标识是否需要填充默认 fragment */
-        var hasFragment = _hasFragment();
+        var hasFragmentPresented = _hasFragment();
 
         /* TODO: 已经存在的是否允许更新 */
         if ( _ID in frag )
@@ -2323,7 +2334,7 @@
             _add( frag );
 
             /* 呈现默认 View 如果没有有效的 view id 被指定 */
-            ! hasFragment && _setupTopIfMatch( frag )
+            ! hasFragmentPresented && _setupTopIfMatch( frag )
         }
     }
 
@@ -3114,9 +3125,10 @@
 
     /**
      * 前往指定的 fragment.
-     * @param hash
-     * @param fromUser 是否来自用户的形为
-     * @param fromUri
+     *
+     * @param hash {InnerHash}
+     * @param fromUser {boolean} 是否来自用户的形为
+     * @param fromUri {boolean}
      * @private
      */
     var _triggerGoNext = function(hash, fromUser, fromUri) {
