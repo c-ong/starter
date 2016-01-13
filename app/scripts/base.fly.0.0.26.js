@@ -69,7 +69,7 @@
     browser.qqx5    = !! qqx5;
 
     /* 一些判断类型的函数 */
-    var isUndefined = function(who) { return undefined === who },
+    var isUndefined = function(who) { return who === void 0 },
         isString    = function(who) { return 'string' == typeof who },
         isArray     = $.isArray,
         isNumber    = function(who) { return ! isUndefined(who)
@@ -149,7 +149,9 @@
 
         /* Runtime Env */
         os:             os,
-        browser:        browser
+        browser:        browser,
+
+        cubic_bezier:   'cubic-bezier(0.4, 0, 0.2, 1)'
 
         /* 提供了短名方法,用于访问 console 方法 */
         /*
@@ -746,6 +748,7 @@
 
     /**
      * 一个 fragment 从定义到销毁将会执行以下这些过程.
+     *
      * @type {Array}
      */
     var LIFECYCLE_METHODS = [ _ATTACH, _CREATE, _CREATE_VIEW, _START,
@@ -759,16 +762,19 @@
 
     /**
      * 这个 LIFECYCLE_METHODS 对应的 Callback.
-     * @type {array}
+     *
+     * @type {Array}
      */
     var SUPPORTED_HANDLERS = [ "onAttach", "onCreate", "onCreateView", "onStart",
         "onResume", "onPause", "onStop", "onDestroyView", "onDestroy", "onDetach",
         _PRE_RENDER_HANDLER, _RENDERED_HANDLER,
-        _ON_RELOAD ];
+        _ON_RELOAD
+    ];
 
     /**
      * LIFECYCLE_METHODS 与 SUPPORTED_HANDLERS 映射关系.
-     * @type {{map}}
+     *
+     * @type {{Map}}
      */
     var METHOD_HANDLERS_MAPPING = {};
     LIFECYCLE_METHODS.forEach( function(lifecycle, idx) {
@@ -777,33 +783,34 @@
 
     var _METHODS = [
         /* 设置 title, 注意不是所有的场景都支持,如: 微信 */
-        [ 'setTitle',   setTitle    ],
+        [ 'setTitle',           setTitle    ],
 
         /* 判别是否可见 */
-        [ 'isVisible',  isVisible   ],
+        [ 'isVisible',          isVisible   ],
 
         /* 获取参数对儿 */
-        [ 'getArgs',    getArgs     ],
+        [ 'getArgs',            getArgs     ],
 
         /* 填充内空 */
-        [ 'render',     render      ],
+        [ 'render',             render      ],
 
         /* 获取该 Fragment 的容器 */
-        [ 'getContainer', getContainer ],
+        [ 'getContainer',       getContainer ],
 
         /* 询问是否内容已经加载 */
-        [ 'hasContentLoaded', hasContentLoaded ],
+        [ 'hasContentLoaded',   hasContentLoaded ],
 
         /* Storage */
-        [ 'put', $lr.throwNiyError ],
-        [ 'get', $lr.throwNiyError ],
-        [ 'has', $lr.throwNiyError ],
-        [ 'remove', $lr.throwNiyError ],
-        [ 'clear', $lr.throwNiyError ]
+        [ 'put',                $lr.throwNiyError ],
+        [ 'get',                $lr.throwNiyError ],
+        [ 'has',                $lr.throwNiyError ],
+        [ 'remove',             $lr.throwNiyError ],
+        [ 'clear',              $lr.throwNiyError ]
     ];
 
     /**
      * fragments 的根节点.
+     *
      * @type {undefined}
      * @private
      */
@@ -811,6 +818,7 @@
 
     /**
      * fragment DOM 节点模板.
+     *
      * @type {DOM}
      * @private
      */
@@ -818,6 +826,7 @@
 
     /**
      * fragment 容器.
+     *
      * @type {Map}
      * @private
      */
@@ -838,6 +847,8 @@
 
     /**
      * 是否有默认 Fragment.
+     *
+     * @return {boolean}
      * @private
      */
     function _hasFragment() {
@@ -1043,12 +1054,18 @@
 
     /**
      * 获取 fragment 的容器.
+     *
      * @returns {DOM Element}
      */
     function getContainer() {
         return getLayout.call( this )[ 0 ]
     }
 
+    /**
+     * 返回 fragment 容器, 这是一个 ZeptoCollection 类型的数据.
+     *
+     * @returns {ZeptoCollection}
+     */
     function getLayout() {
         return this[ _EL_ ][ _LAYOUT_ ]
     }
@@ -1064,6 +1081,7 @@
 
     /**
      * 销毁自身并返回上一级,如果当前 view 为根级, 则不会执行该操作并返回 false.
+     *
      * @returns {boolean}
      */
     function finish() {
@@ -1117,6 +1135,7 @@
         /* 隐藏当前 fragment */
         _hide( current, _FROM_STACK_YES, 1 );
 
+        /* 如果为首次呈现则需要执行一系列的初始动作 */
         layout[ 0 ].parentNode
             || (
                 attach      ( next ),
@@ -1267,6 +1286,7 @@
         location.hash = _buildInnerHashByFragment(fragment)
     }
 
+
     /* TODO(XCL): Renaming the fn name to forward */
     /**
      * 进行 fragment 切换操作.
@@ -1274,15 +1294,20 @@
      * @param id {string} 指定 fragment 的 id
      * @param args {object} 参数(optional)
      * @param fromUri {boolean} 是否从 uri 触发(optional)
-     * @param animation 切换效果(optional)
+     * @param animation {string} 切换效果(optional)
      * @private
      */
-    function _go(id, args, fromUri, animation) {
+    function _requestGo/*_go*/(id, args, fromUri, /*fromUser,*/ animation) {
         if ( _hasFragmentTransInProcessing() )
             return;
 
         if ( ! _exist( id ) )
             return;
+
+        /*
+        console.log( "_requestGo: id, args, fromUri, animation" );
+        console.log( "_requestGo: %s, %s, %s, %s", id, args, fromUri, animation );
+        */
 
         /* id, args, ?, ? */
         if ( isPlainObject( args ) ) {
@@ -1294,10 +1319,10 @@
             /* fromUri = args = undefined; */
         }
         /* id, fromUri, ? */
-        else {
-            animation = fromUri;
-            fromUri = args;
-            args = undefined;
+        else if ( $lr.isUndefined(args) ) {
+            animation   = fromUri;
+            fromUri     = args;
+            args        = undefined;
         }
 
         /* id, args, animation */
@@ -1306,7 +1331,19 @@
             fromUri = undefined;
         }
 
-        _performGo.call( getFragment( id ), fromUri, animation )
+        // _requestGo: id, args, fromUri, animation
+        // _requestGo: home, null, 0, undefined
+        // C
+        // _requestGo: home, undefined, null, 0
+
+        /*console.log( "_requestGo: %s, %s, %s, %s, multitask: %s", id, args, fromUri, animation, _isSupportMultiInstance( id ) );*/
+
+        if ( _isSupportMultiInstance( id ) )
+            _goNextWithMultiMode( id, args, /*fromUser*/0, fromUri, animation );
+        else
+            _goNext( id, args, /*fromUser*/0, fromUri, animation );
+
+        /*_performGo.call( getFragment( id ), fromUri, animation )*/
     }
 
     /**
@@ -1343,7 +1380,7 @@
     }
 
     /* 参考: http://web.archive.org/web/20130703081745/http://www.cogs.susx.ac.uk/courses/dats/notes/html/node114.html */
-    function hash(str) {
+    function hashCode(str) {
         var hash = 0;
 
         if ( ! (0 ^ str.length) )
@@ -1361,7 +1398,7 @@
         return hash
     }
 
-    function isSupportMultiInstance(id) {
+    function _isSupportMultiInstance(id) {
         /* derive */
         return _exist( id )
             && !! getFragment( id )[ _MULTIPLE_INSTANCES ]
@@ -1393,11 +1430,11 @@
         if ( null == flattenedArgs )
             return id;
 
-        return [ id, _DERIVE_DELIMITER, hash( flattenedArgs ) ].join( '' )
+        return [ id, _DERIVE_DELIMITER, hashCode( flattenedArgs ) ].join( '' )
     }
 
     /**
-     * 用于间隔实例 hashcode.
+     * 用于间隔实例 hash.
      * @type {string}
      * @private
      */
@@ -1523,6 +1560,12 @@
     onFragmentChangeAfter
     hasContentLoaded
     */
+    /**
+     * 配置 fragment 全局事件 listener.
+     *
+     * @type {{onFragmentChangeBefore: null, onFragmentChangeAfter: null, onCurrentlyFragmentContentLoaded: null}}
+     * @private
+     */
     var _config = {
         onFragmentChangeBefore: null,
         onFragmentChangeAfter: null,
@@ -1644,7 +1687,7 @@
                 animation = _getAnimation( next );
 
 
-            transit = _buildTransition( animation, _FORWARD );
+            transit         = _buildTransition( animation, _FORWARD );
             postCommitTrans = !! transit.rear;
         }
 
@@ -1663,6 +1706,7 @@
 
         _casStackIfNecessary( current, next );
 
+        /* 如果为首次呈现则需要执行一系列的初始动作 */
         ( layout[ 0 ].parentNode && '' != layout.html() )
             ||
             (
@@ -1703,12 +1747,19 @@
             if ( historyApiSupported ) {
 
             } else {
-                /* 更新至 location.hash */
-                _applyHash( _current )
+                /* 更新至 location.hash(此后 hash 将被变更) */
+                _applyHash( _current );
             }
 
+            /*
+             * 如果 trans 为后置提交, 那么这里将不在处理, 注意 Rear 与 Front 效果呈现时序
+             * 有可能不一致.
+             */
             if ( ! postCommitTrans ) {
+                /* 标识 trans 完成 */
                 _endTrans();
+
+                /* 触发 onFragmentChangeAfter 事件 */
                 fireFragmentChangeAfterEvent();
             }
             /*postCommitTrans || _endTrans();*/
@@ -1864,11 +1915,17 @@
 
     /* --------------------------------------------------------------------- */
 
+    /* 标识是否有切换效果 */
     var _TRANSIT_YES    = ! 0;
     var _TRANSIT_NONE   = ! _TRANSIT_YES;
 
     /* 目前我们支持 4 种切换效果 */
-    var fx = { slide: 'slide', cover: 'cover', fade: 'fade', none: 'none' };
+    var fx = {
+        slide:  'slide', /* 左右滑动切换   */
+        cover:  'cover', /* 从下至上的覆盖  */
+        fade:   'fade',  /* fade-in-out  */
+        none:   'none'   /* 无切换效果     */
+    };
 
     /* 将 fx 置为全局可见 */
     win.fx = fx;
@@ -1918,7 +1975,10 @@
         _BACKWARD           = _FORWARD - 1;
 
     /* 界面切换效果没设置 */
-    var _TRANSITION_UNSET = { rear: 0, front: 0 };
+    var _TRANSITION_UNSET = {
+        rear: 0,
+        front: 0
+    };
 
     function _show(target, transit/*, fromStack*/) {
         var layout = target[ _EL_ ][ _LAYOUT_ ];
@@ -1934,7 +1994,7 @@
             layout.animate(
                 transit.front,
                 $.fx.speeds.slow,
-                'cubic-bezier(0.4, 0, 0.2, 1)'/*'linear'*/ )
+                $lr.cubic_bezier/*'linear'*/ )
     }
 
     /**
@@ -1944,6 +2004,7 @@
      * @param fromStack 是否从 stack 中取得 fragment
      * @param endTransNeeded 是否需要结束 trans
      * @param transit 动画
+     * @param firer 用于触发事件(optional)
      * @private
      */
     function _hide(target, /*fromStack, endTransNeeded,*/ transit, firer) {
@@ -1958,7 +2019,7 @@
             layout.animate(
                 transit.rear,
                 $.fx.speeds.slow,
-                'cubic-bezier(0.4, 0, 0.2, 1)'/*'linear'*/,
+                $lr.cubic_bezier/*'linear'*/,
                 function () {
                     layout.hide();
 
@@ -1968,55 +2029,6 @@
                 })
         } else {
             layout.hide();
-        }
-    }
-
-    function BAK_show(target, transit, fromStack) {
-        var layout = target[ _EL_ ][ _LAYOUT_ ];
-
-        $lr.dev && console.log( "<< show # %s, %s", target[ _ID ],
-            (transit
-                ? (fromStack ? 'fragment-pop-enter' : 'fragment-enter')
-                : '' ) );
-
-        /* Show the dom */
-        layout.show();
-
-        transit
-        &&
-        layout.animate(
-            fromStack ? 'fragment-pop-enter' : 'fragment-enter',
-            $.fx.speeds.slow,
-            'cubic-bezier(0.4, 0, 0.2, 1)'/*'linear'*/ )
-    }
-
-    function BAK_hide(target, fromStack, endTransNeeded, transit) {
-        var layout = target[ _EL_ ][ _LAYOUT_ ];
-
-        $lr.isUndefined( transit ) && (transit = _TRANSITION_SLIDE);
-
-        $lr.dev && console.log( ">> hide # %s, %s", target[ _ID ],
-            (fromStack
-                ? 'fragment-pop-exit'
-                : 'fragment-exit') );
-
-        /*$lr.dev && console.time('EndAnimation');*/
-
-        if ( transit ) {
-            /* properties, duration, ease, callback, delay */
-            layout.animate(
-                fromStack ? 'fragment-pop-exit' : 'fragment-exit',
-                $.fx.speeds.slow,
-                'cubic-bezier(0.4, 0, 0.2, 1)'/*'linear'*/,
-                function () {
-                    layout.hide();
-
-                    endTransNeeded && _endTrans();
-                })
-        } else {
-            layout.hide();
-
-            endTransNeeded && _endTrans();
         }
     }
 
@@ -2039,7 +2051,7 @@
         history.pushState( state, title, hash )
     }
 
-    function _casStackIfNecessary(r, f) {
+    function _casStackIfNecessary(/* zepto */r, /* zepto */f) {
         if ( ! r )
             return;
 
@@ -2063,8 +2075,9 @@
     }
 
     /**
+     * 取出上一个暂停的 fragment.
      *
-     * @returns {*}
+     * @returns {fragment}
      * @private
      */
     function _popBackStack() {
@@ -2073,7 +2086,8 @@
     }
 
     function _push(fragment) {
-        return _backStack.push( fragment[ _ID ] )
+        return _backStack.push( _getId( fragment ) );
+        /*return _backStack.push( fragment[ _ID ] )*/
     }
 
     function _pop() {
@@ -2082,24 +2096,34 @@
 
     /* --------------------------------------------------------------------- */
 
+    /**
+     * fragment 被暂停.
+     *
+     * @param fragment
+     */
     function pause(fragment) {
-        _invokeHandler( fragment, _PAUSE/*pause*/ )
+        _invokeHandler( fragment, _PAUSE )
     }
 
+    /**
+     * fragment 被停止.
+     *
+     * @param fragment
+     */
     function stop(fragment) {
-        _invokeHandler( fragment, _STOP/*stop*/ )
+        _invokeHandler( fragment, _STOP )
     }
 
     function destroyView(fragment) {
-        _invokeHandler( fragment, _DESTROY_VIEW/*destroyView*/ )
+        _invokeHandler( fragment, _DESTROY_VIEW )
     }
 
     function destroy(fragment) {
-        _invokeHandler( fragment, _DESTROY/*destroy*/ )
+        _invokeHandler( fragment, _DESTROY )
     }
 
     function detach(fragment) {
-        _invokeHandler( fragment, _DETACH/*detach*/ )
+        _invokeHandler( fragment, _DETACH )
     }
 
     /* --------------------------------------------------------------------- */
@@ -2175,7 +2199,6 @@
         var clone = {};
 
         /* Inherit: 处理依赖项 */
-
         /* Inherit: 处置 Handlers */
 
         /* Id 也复制但不使用 */
@@ -2226,12 +2249,14 @@
         _ensure();
 
         /* Fragment 如果已经定义过则无需再次定义 */
-        var frag = _exist( id ) ? getFragment( id ) : {};
+        var frag = _exist( id )
+            ? getFragment( id )
+            : {};
 
-        /* 标识是否需要填充默认 fragment */
-        var hasFragment = _hasFragment();
+        /* 标识是否需要填充默认 fragment, 如果没有首个 fragment 被呈现 */
+        var hasFragmentPresented = _hasFragment();
 
-        /* TODO: 已经存在的是否允许更新 */
+        /* TODO(XCL): 已经存在的是否允许更新 */
         if ( _ID in frag )
             return frag;
 
@@ -2323,7 +2348,9 @@
             _add( frag );
 
             /* 呈现默认 View 如果没有有效的 view id 被指定 */
-            ! hasFragment && _setupTopIfMatch( frag )
+            /* FIXME(XCL): 暂时从 bootstrap 调用, 以在 register 过程中调用一些未加载的
+                           fragment */
+            /*! hasFragmentPresented && _setupTopIfMatch( frag )*/
         }
     }
 
@@ -2381,6 +2408,13 @@
         return hash.substr( 2 )
     }
 
+    /**
+     * 判断是否为用于 fragment 操控的 hash.
+     *
+     * @param hash
+     * @returns {*|boolean}
+     * @private
+     */
     function _isInnerRawHash(hash) {
         return hash && '!' === hash.charAt( 1 )
     }
@@ -2409,6 +2443,7 @@
     /**
      * This is just convert the id to Canonicalized forms.
      * e.g.: app.tour -> app/tour
+     *
      * @param id
      * @returns {string}
      * @private
@@ -2418,7 +2453,8 @@
     }
 
     /**
-     * 将 View hash 转化为'命名空间'形式的 id, 如: view/home -> view.home.
+     * 将 Fragment hash 转化为'命名空间'形式的 id, 如: view/home -> view.home.
+     *
      * @param hash
      * @returns {XML|string|void}
      * @private
@@ -2427,6 +2463,13 @@
         return /\/+/g.test( hash ) ? ( hash.replace( /\//g, '.' ) ) : hash
     }
 
+    /**
+     * 重写指定 fragment 的 args.
+     *
+     * @param id
+     * @param args
+     * @private
+     */
     function _overrideArgs(id, args) {
         // TODO:
         var x = getFragment( id );
@@ -2435,6 +2478,7 @@
 
     /**
      * 分解 hash, 将从 URL 截取的 hash 片段分解为有效的 view id 及其参数.
+     *
      * @param rawHash
      * @returns {{hash: (Array.<T>|string|*|Blob|ArrayBuffer), args: *}}
      * @private
@@ -2447,7 +2491,8 @@
 
     /**
      * 判断指定的 hash 是否包含参数.
-     * @param rawHash
+     *
+     * @param rawHash {string} 来自 location 的 hash.
      * @returns {boolean}
      * @private
      */
@@ -2556,6 +2601,7 @@
 
     /**
      * 是否参数相同.
+     *
      * @param l
      * @param r
      * @returns {boolean}
@@ -2567,6 +2613,7 @@
 
     /**
      * 判断两个 hash 是否完全相同.
+     *
      * @param l
      * @param r
      * @returns {boolean}
@@ -2579,6 +2626,7 @@
 
     /**
      * Called only once.
+     *
      * @param fragment
      * @private
      */
@@ -2593,8 +2641,386 @@
         && (
             /* 更新 args */
             _overrideArgs( fragment[ _ID ], originArgs ),
-            _go( fragment[ _ID ] )
+            _requestGo( fragment[ _ID ] )
         )
+    }
+
+    /* --------------------------------------------------------------------- */
+
+    /**
+     * BUG(s):
+     * $lairen.get -> error;
+     * finish 销毁过晚;
+     * 快速点击 UI 将不可见;
+     * 多实首次 URI 加载, 不走 multitask mode;
+     * 多实例跳转后, 再后退动画不误;
+     * 通过 beginWith multitask 根实例可能不会被创建;
+     *
+     */
+
+    //使用 multitask 时会导致 loading indicator 二次呈现;
+
+    /**
+     * TODO:
+     * observer for load trigger(Once OR Ever)(Loading Strategy)
+     * {fade:true}
+     * bind
+     * fragment listener
+     * props
+     * 支持停用动画
+     * handling unknown id
+     * put => get => remove
+     * onPreRender => onRendered
+     * progress status
+     * root color
+     * parent -> back
+     * url with args
+     * clearContentOnLeave
+     * destroyOnLeave
+     * open fragment
+     * show fragment
+     * reveal fragment
+     * render fragment
+     * present fragment
+     * appear fragment
+     * reload with args
+     * parent accessed by ref
+     * setTitle
+     * pass args
+     * detectHashChange => onHashChange
+     */
+
+    /* --------------------------------------------------------------------- */
+
+    function _processState() {
+
+    }
+
+    var _LISTEN_WINDOW_POP_STATE = 'popstate';
+
+    var _IDX            = _STACK_INDEX_;
+
+    /* 首次加载的 view */
+    var _FIRST_STATE    = 0;
+
+    /* 当前状态 */
+    var _currentState   = {};
+    _currentState[ _IDX ] = _FIRST_STATE;
+
+    function _newState() {
+        var state = {};
+
+        state[ _IDX ] = _backStack.length - 1;
+
+        return state
+    }
+
+    function _isBackward(event) {
+        var current = _currentState;
+
+        return _FIRST_STATE == current[ _IDX ]
+            || event.state[ _IDX ] < current[ _IDX ];
+    }
+
+    function _handleBackward(event) {
+        var idx = event.state[ _IDX ];
+
+        idx in _backStack && _performBack();
+    }
+
+    /* XXX(XCL): 是否应该支持 forward 操作 */
+    function _handleForward(event) {
+
+    }
+
+    function _checkStateEvent(/* PopStateEvent */event) {
+        return event['state'] && _IDX in event.state;
+    }
+
+    /* 如果跳转到其它页面当后退至当前页面则可能 stack 丢失(RELOAD) */
+    var _popStateHandler = function(event) {
+        /*$lr.dev && console.log( "history entries: %s", history.length );*/
+        /**
+         * FIXME(XCL): 如果正在进行 trans 时触发 pop state 则说明是为了修正来自用户的
+         *              快速 touch 操作来的 fargmnet 无跳转的问题, 此时仅仅是进行
+         *              pop back 操作
+         */
+        /*if ( _isLocked() )
+         return;*/
+
+        if ( ! _checkStateEvent( event ) )
+            return;
+
+        _isBackward( event )
+            ? _handleBackward( event )
+            : _handleForward( event );
+
+        /**
+         * FIXME(XCL): Trying to prevent the user backward operation
+         * if ( 'onpopstate' in window ) {
+         *    history.pushState( null, null, location.href );
+         *
+         *    window.addEventListener( 'popstate', function () {
+         *        FIXME: To override the history state
+         *        history.pushState( null, null, location.href )
+         *    } )
+         *  }
+         */
+    };
+
+    /* --------------------------------------------------------------------- */
+
+    /**
+     * 依赖该事件进行 fragment 导向
+     * @type {string}
+     * @private
+     */
+    var _LISTENER_HASH_CHANGE = 'onhashchange';
+
+    /**
+     * 记录初始 hash
+     * @private
+     */
+    var _ORIGIN_HASH = _isFragmentHash( location.hash )
+        ? _resolveHash( location.hash )
+        : null;
+
+    var _onTransEnded = function() {
+        _handleDelayedHashChangeEvent();
+    };
+
+    /**
+     * 延迟处理 hash change 事件.
+     *
+     * @private
+     */
+    var _handleDelayedHashChangeEvent = function() {
+        if ( ! _delayed_hash_change_event )
+            return;
+
+        var oldInnerHash    = _delayed_hash_change_event.oldInnerHash,
+            newRawHash      = _delayed_hash_change_event.newRawHash;
+
+        /* 标记 delayed event 已处理 */
+        _delayed_hash_change_event = undefined;
+
+        _handleHashChange( oldInnerHash, newRawHash )
+    };
+
+    /**
+     * 将指定的 hash change 事件延迟处理.
+     *
+     * @param oldInnerHash
+     * @param newRawHash
+     * @private
+     */
+    function _postDelayedHashChangeEvent(oldInnerHash, newRawHash) {
+        _delayed_hash_change_event = {
+            oldInnerHash: oldInnerHash,
+            newRawHash: newRawHash };
+    }
+
+    var _roll_back_for_uri_nav = function() {
+        /*history.back();*/
+        /*var rewind = _convertCurrentlyHashToInner();
+         rewind && ( location.hash = _buildInnerHash( rewind ) );*/
+    };
+
+    var _detect_backward_for_uri = undefined;
+
+    var _roll_back;
+
+    /**
+     * 用于对我们再次包装的 HashChangeEvent 进行延迟处理.
+     *
+     * @type {object}
+     * @private
+     */
+    var _delayed_hash_change_event = undefined;
+
+    /**
+     * 提取当前 fragment 的 InnerHash.
+     *
+     * @returns {InnerHash}
+     * @private
+     */
+    function _convertCurrentlyHashToInner() {
+        var data = null;
+
+        if ( _current ) {
+            data = {};
+
+            data[_HASH] = _current[_HASH];
+            data[_ARGS] = _current[_ARGS];
+        }
+
+        return data;
+    }
+
+    /**
+     * 当 hash 变更时调用该 fn.
+     *
+     * @private
+     */
+    var _onHashChange = function(hashChangeEvent) {
+        /*$lr.dev && console.log( "onHashChange::cs -> %s ls -> %s ",
+         JSON.stringify( _currentState ),
+         JSON.stringify( _detect_backward_for_uri ),
+         new Date().getTime() );*/
+
+        var oldInnerHash  = _convertCurrentlyHashToInner(),
+        /* 当前 Browser 中的 hash */
+            newRawHash    = location.hash;
+
+        /* TODO(XCL): Check for transaction timed out... */
+        if ( _hasFragmentTransInProcessing() ) {
+            /* TODO(XCL): postDelayed */
+            _postDelayedHashChangeEvent( oldInnerHash, newRawHash );
+
+            /*console.log( 'Break now: o : %s n : %s ', hashChangeEvent.oldURL, location.hash );*/
+            /*if ( _roll_back != hashChangeEvent.newURL ) {
+             _roll_back_for_uri_nav();
+             }*/
+
+            return;
+        }/* else {
+         _roll_back = null;
+         }*/
+
+        _handleHashChange( oldInnerHash, newRawHash );
+
+        /*_isFragmentHash( newRawHash )
+         && _handleHashChange( oldInnerHash, _resolveHash( newRawHash ) )*/
+    };
+
+    /**
+     * 处理 hash 变更事件.
+     *
+     * @param oldInnerHash {object}
+     * @param newRawHash {string}
+     * @private
+     */
+    function _handleHashChange(oldInnerHash, /*currently*/newRawHash) {
+        /*console.log( 'handleHashChange: [OLD] %s, [NEW] %s, %s',
+         JSON.stringify(oldInnerHash), newRawHash, _isInnerRawHash(newRawHash) );*/
+        if ( ! _isInnerRawHash( newRawHash ) )
+            return;
+
+        _processInnerHashChangedEvent( oldInnerHash, newRawHash )
+    }
+
+    /* TODO: To detect the history back act. */
+    function _processInnerHashChangedEvent(oldInnerHash, /*currently*/newRawHash) {
+        if ( _isMagicBackHash( newRawHash ) ) {
+            _triggerGoBack()
+        }
+        /* 是否为 page hash */
+        else if ( _isFragmentHash( newRawHash ) ) {
+            /*console.log( 'Changed: %s, %s', JSON.stringify( oldInnerHash ), newRawHash );*/
+
+            /* TODO(XCL): Filtering and Sanitizing */
+            var resolvedHash = _resolveHash( newRawHash );
+
+            /* 是否 hash 真的需要更新 */
+            /* 暂时使用 History API */
+            if ( ! _isSameHash( oldInnerHash, resolvedHash ) ) {
+                _triggerGoNext( resolvedHash, /* from_user */1, /* from_uri */1 );
+                /*_detect_backward_for_uri = _currentState;*/
+            }
+        }
+
+        /*$lr.dev && console.log( "onHashChanged %s %s %s"
+         , JSON.stringify( oldHash )
+         , JSON.stringify( newHash )
+         , new Date().getTime() );*/
+    }
+
+    /* _triggerLoadFragment */
+    /* triggerBackward */
+
+    /**
+     * 前往指定的 fragment.
+     *
+     * @param hash {InnerHash}
+     * @param fromUser {boolean} 是否来自用户的形为
+     * @param fromUri {boolean}
+     * @private
+     */
+    var _triggerGoNext = function(/*InnerHash*/hash, fromUser, fromUri) {
+        var id = _makeIdentify( hash[ _HASH ] );
+
+        _requestGo( id, hash[_ARGS], fromUri );
+
+        /*if ( _isSupportMultiInstance( id ) )
+            _goNextWithMultiMode( id, hash[ _ARGS ], fromUser, fromUri );
+        else
+            _goNext( id, hash[ _ARGS ], fromUser, fromUri );*/
+    };
+
+    /* TODO(XCL): boot in #!- */
+    var _triggerGoBack = function() {
+        back( 1 );
+    };
+
+    function _goNextWithMultiMode(id, args, fromUser, fromUri, animation) {
+        /**
+         * Step 1: 是否支持多实例
+         * Step 2: 如果支持看实例是否被创建
+         * Step 3: 前往实例
+         */
+
+        /**
+         * 对于多实例 fragment 我们使用在其基本 id 之上加 args 的 hash 用于区分，
+         * 如：ui.view#123456
+         */
+        var deriveId = _calculateDeriveKey( id, args );
+
+        /* XXX: 实际上我们是依赖 args 的不同来维护多实例，但这并不意味着允许 args 为 null */
+        if ( id == deriveId ) {
+            _goNext( id, args, fromUser, fromUri, animation );
+            return;
+        }
+
+        _exist( deriveId ) || _buildDerive( id, deriveId, args );
+
+        _performGo.call( getFragment( deriveId ), fromUri, animation );
+
+        /*_requestGo( deriveId, fromUri )*/
+    }
+
+    /**
+     * 前往下一步 fragment.
+     *
+     * @param id
+     * @param args (optional)
+     * @param fromUser (optional)
+     * @param fromUri (optional)
+     * @private
+     */
+    function _goNext(id, args, fromUser, fromUri, animation) {
+        /* 更新 args */
+        args && _overrideArgs( id, args );
+
+        /* 前往该 view */
+        _performGo.call( getFragment( id ), fromUri, animation );
+        /*_requestGo( id, fromUri )*/
+    }
+
+    /**
+     * 设置 GPU 硬件加速开启状态.
+     *
+     * @param viewport
+     * @param enabled
+     */
+    function setGPUAcceleratedCompositingEnabled(viewport, enabled) {
+        var flag = 'x-ui';
+
+        viewport = $(viewport);
+
+        if ( enabled )
+            viewport.hasClass( flag ) || viewport.addClass( flag );
+        else
+            viewport.hasClass( flag ) && viewport.removeClass( flag );
     }
 
     /* TODO(XCL): Just dumping some state or data Of the fragment(s)... */
@@ -2613,6 +3039,25 @@
         return _register( id, config )
     };
 
+    /**
+     * $Fragment 开放的静态 fn, 用于定义, 跳转控制.
+     *
+     * @type { {
+     *          config: config,
+     *          title: string,
+     *          define: (lairen.fragment|*),
+     *          bootstrap: win.$Fragment.bootstrap,
+     *          go: win.$Fragment.go,
+     *          goWithoutFx: win.$Fragment.goWithoutFx,
+     *          canBack: canBack,
+     *          back: back,
+     *          reload: _reload,
+     *          update: throwNiyError,
+     *          finish: win.$Fragment.finish,
+     *          finishAndGo: win.$Fragment.finishAndGo,
+     *          destroy: throwNiyError
+     * } }
+     */
     win.$Fragment = {
 
         /**
@@ -2737,8 +3182,8 @@
          *  3: getArgs      获取参数对儿
          *  4: render       渲染 UI 依照给定的参数类型
          *  5: getContainer 获取 fragment 的容器
-         *
          * </pre>
+         *
          * @param id
          * @param config
          * @returns {object} 一个 fragment 实例
@@ -2746,13 +3191,15 @@
         define:     $lr.fragment,
 
         /**
-         * 启动 fragment 如果当前 location.hash 不含有效的 hash 则使用指定的作为初始 fragment.
+         * 启动 fragment 如果当前 location.hash 不含有效的 hash 则使用指定的作
+         * 为初始 fragment.
          *
          * @param id
          * @param args
          */
         bootstrap:  function(id, args) {
-            _ORIGIN_HASH || _go( id, args, /* from_uri */0 )
+            _ORIGIN_HASH && (id = _ORIGIN_HASH[_HASH], args=_ORIGIN_HASH[_ARGS]);
+            _requestGo( id, args, /* from_uri */0 )
         },
 
         /**
@@ -2761,9 +3208,7 @@
          * @param id
          * @param args
          */
-        go:         function(id, args) {
-            _go( id, args /*, from_uri = 0 */ )
-        },
+        go:         _requestGo,
 
         /**
          * 呈现指定的 fragment 但不启用动画.
@@ -2772,16 +3217,19 @@
          * @param args
          */
         goWithoutFx: function(id, args) {
-            _go( id, args, /* from_uri = 0, */ fx.none )
+            _requestGo( id, args, /* from_uri = 0, */ fx.none )
         },
 
         /**
-         * 判断是否有上一个 fragment, 如果有则可以执行返回操作.
+         * 判断是否有前一个 fragment, 如果有则可以执行返回操作.
+         *
+         * @return {boolean}
          */
         canBack:    canBack,
 
         /**
          * 请求进行后退操作, 如果 BackStack 有可用的记录.
+         *
          * @return {boolean} true 说明后退操作有效, 反则无效
          */
         back:       back,
@@ -2796,6 +3244,7 @@
 
         /**
          * 可以向 fragment 传递一些参数用来更新.
+         *
          * @param id
          * @param args
          */
@@ -2813,6 +3262,7 @@
         /**
          * 销毁当前 fragment & 前往指定 fragment.
          * Note: 如果当前为根级则该方法不会被执行
+         *
          * @param id
          * @params args
          */
@@ -2823,10 +3273,13 @@
 
         /**
          * 回收一个 fragment.
+         *
          * @param id
          */
         destroy:    $lr.throwNiyError
     };
+
+    /* ---------------------------------------------------------------------- */
 
     /**
      * 为 $Fragment[go, back] 添加短名方法.
@@ -2839,357 +3292,7 @@
     /* 后退操作 */
     win.back        = win.$Fragment.back;
 
-    /* --------------------------------------------------------------------- */
-
-    /**
-     * BUG(s):
-     * $lairen.get -> error;
-     * finish 销毁过晚;
-     * 快速点击 UI 将不可见;
-     * 多实首次 URI 加载, 不走 multitask mode;
-     * 多实例跳转后, 再后退动画不误;
-     * 通过 beginWith multitask 根实例可能不会被创建;
-     *
-     */
-
-    //使用 multitask 时会导致 loading indicator 二次呈现;
-
-    /**
-     * TODO:
-     * observer for load trigger(Once OR Ever)(Loading Strategy)
-     * {fade:true}
-     * bind
-     * fragment listener
-     * props
-     * 支持停用动画
-     * handling unknown id
-     * put => get => remove
-     * onPreRender => onRendered
-     * progress status
-     * root color
-     * parent -> back
-     * url with args
-     * clearContentOnLeave
-     * destroyOnLeave
-     * open fragment
-     * show fragment
-     * reveal fragment
-     * render fragment
-     * present fragment
-     * appear fragment
-     * reload with args
-     * parent accessed by ref
-     * setTitle
-     * pass args
-     * detectHashChange => onHashChange
-     */
-
-    /* --------------------------------------------------------------------- */
-
-    function _processState() {
-
-    }
-
-    var _LISTEN_WINDOW_POP_STATE = 'popstate';
-
-    var _IDX            = _STACK_INDEX_;
-
-    /* 首次加载的 view */
-    var _FIRST_STATE    = 0;
-
-    /* 当前状态 */
-    var _currentState   = {};
-        _currentState[ _IDX ] = _FIRST_STATE;
-
-    function _newState() {
-        var state = {};
-
-            state[ _IDX ] = _backStack.length - 1;
-
-        return state
-    }
-
-    function _isBackward(event) {
-        var current = _currentState;
-
-        return _FIRST_STATE == current[ _IDX ]
-            || event.state[ _IDX ] < current[ _IDX ];
-    }
-
-    function _handleBackward(event) {
-        var idx = event.state[ _IDX ];
-
-        idx in _backStack && _performBack();
-    }
-
-    /* XXX(XCL): 是否应该支持 forward 操作 */
-    function _handleForward(event) {
-
-    }
-
-    function _checkStateEvent(/* PopStateEvent */event) {
-        return event['state'] && _IDX in event.state;
-    }
-
-    /* 如果跳转到其它页面当后退至当前页面则可能 stack 丢失(RELOAD) */
-    var _popStateHandler = function(event) {
-        /*$lr.dev && console.log( "history entries: %s", history.length );*/
-        /**
-         * FIXME(XCL): 如果正在进行 trans 时触发 pop state 则说明是为了修正来自用户的
-         *              快速 touch 操作来的 fargmnet 无跳转的问题, 此时仅仅是进行
-         *              pop back 操作
-         */
-        /*if ( _isLocked() )
-            return;*/
-
-        if ( ! _checkStateEvent( event ) )
-            return;
-
-        _isBackward( event )
-            ? _handleBackward( event )
-            : _handleForward( event );
-
-        /**
-         * FIXME(XCL): Trying to prevent the user backward operation
-         * if ( 'onpopstate' in window ) {
-         *    history.pushState( null, null, location.href );
-         *
-         *    window.addEventListener( 'popstate', function () {
-         *        FIXME: To override the history state
-         *        history.pushState( null, null, location.href )
-         *    } )
-         *  }
-         */
-    };
-
-    /* --------------------------------------------------------------------- */
-
-    /**
-     * 依赖该事件进行 fragment 导向
-     * @type {string}
-     * @private
-     */
-    var _LISTENER_HASH_CHANGE = 'onhashchange';
-
-    /**
-     * 记录初始 hash
-     * @private
-     */
-    var _ORIGIN_HASH = _isFragmentHash( location.hash )
-        ? _resolveHash( location.hash )
-        : null;
-
-    var _onTransEnded = function() {
-        _handleDelayedHashChangeEvent();
-    };
-
-    var _handleDelayedHashChangeEvent = function() {
-        if ( ! _delayed_hash_change_event )
-            return;
-
-        var oldInnerHash    = _delayed_hash_change_event.oldInnerHash,
-            newRawHash      = _delayed_hash_change_event.newRawHash;
-
-        /* 标记 delayed event 已处理 */
-        _delayed_hash_change_event = undefined;
-
-        _handleHashChange( oldInnerHash, newRawHash )
-    };
-
-    function _postDelayedHashChangeEvent(oldInnerHash, newRawHash) {
-        _delayed_hash_change_event = {
-            oldInnerHash: oldInnerHash,
-            newRawHash: newRawHash };
-    }
-
-    var _roll_back_for_uri_nav = function() {
-        /*history.back();*/
-        /*var rewind = _convertCurrentlyHashToInner();
-         rewind && ( location.hash = _buildInnerHash( rewind ) );*/
-    };
-
-    var _detect_backward_for_uri = undefined;
-
-    var _roll_back;
-
-    /**
-     * 用于对我们再次包装的 HashChangeEvent 进行延迟处理.
-     *
-     * @type {object}
-     * @private
-     */
-    var _delayed_hash_change_event = undefined;
-
-    function _convertCurrentlyHashToInner() {
-        var data = null;
-
-        if ( _current ) {
-            data = {};
-
-            data[_HASH] = _current[_HASH];
-            data[_ARGS] = _current[_ARGS];
-        }
-
-        return data;
-    }
-
-    /**
-     * 当 hash 变更时调用该 fn.
-     * @private
-     */
-    var _onHashChange = function(hashChangeEvent) {
-        /*$lr.dev && console.log( "onHashChange::cs -> %s ls -> %s ",
-            JSON.stringify( _currentState ),
-            JSON.stringify( _detect_backward_for_uri ),
-            new Date().getTime() );*/
-
-        var oldInnerHash  = _convertCurrentlyHashToInner(),
-            /* 当前 Browser 中的 hash */
-            newRawHash    = location.hash;
-
-        /* TODO(XCL): Check for transaction timed out... */
-        if ( _hasFragmentTransInProcessing() ) {
-            /* TODO(XCL): postDelayed */
-            _postDelayedHashChangeEvent( oldInnerHash, newRawHash );
-
-            /*console.log( 'Break now: o : %s n : %s ', hashChangeEvent.oldURL, location.hash );*/
-            /*if ( _roll_back != hashChangeEvent.newURL ) {
-                _roll_back_for_uri_nav();
-            }*/
-
-            return;
-        }/* else {
-            _roll_back = null;
-        }*/
-
-        _handleHashChange( oldInnerHash, newRawHash );
-        /*_isFragmentHash( newRawHash )
-            && _handleHashChange( oldInnerHash, _resolveHash( newRawHash ) )*/
-    };
-
-    /**
-     * 处理 hash 变更事件.
-     *
-     * @param oldInnerHash {object}
-     * @param newRawHash {string}
-     * @private
-     */
-    function _handleHashChange(oldInnerHash, /*currently*/newRawHash) {
-        /*console.log( 'handleHashChange: [OLD] %s, [NEW] %s, %s',
-        JSON.stringify(oldInnerHash), newRawHash, _isInnerRawHash(newRawHash) );*/
-        if ( ! _isInnerRawHash( newRawHash ) )
-            return;
-
-        _processInnerHashChangedEvent( oldInnerHash, newRawHash )
-    }
-
-    /* TODO: To detect the history back act. */
-    function _processInnerHashChangedEvent(oldInnerHash, /*currently*/newRawHash) {
-        if ( _isMagicBackHash( newRawHash ) ) {
-            _triggerGoBack()
-        }
-        /* 是否为 page hash */
-        else if ( _isFragmentHash( newRawHash ) ) {
-            /*console.log( 'Changed: %s, %s', JSON.stringify( oldInnerHash ), newRawHash );*/
-
-            /* TODO(XCL): Filtering and Sanitizing */
-            var resolvedHash = _resolveHash( newRawHash );
-
-            /* 是否 hash 真的需要更新 */
-            /* 暂时使用 History API */
-            if ( ! _isSameHash( oldInnerHash, resolvedHash ) ) {
-                _triggerGoNext( resolvedHash, /* from_user */1, /* from_uri */1 );
-                /*_detect_backward_for_uri = _currentState;*/
-            }
-        }
-
-        /*$lr.dev && console.log( "onHashChanged %s %s %s"
-         , JSON.stringify( oldHash )
-         , JSON.stringify( newHash )
-         , new Date().getTime() );*/
-    }
-
-    /* _triggerLoadFragment */
-    /* triggerBackward */
-
-    /**
-     * 前往指定的 fragment.
-     * @param hash
-     * @param fromUser 是否来自用户的形为
-     * @param fromUri
-     * @private
-     */
-    var _triggerGoNext = function(hash, fromUser, fromUri) {
-        var id = _makeIdentify( hash[ _HASH ] );
-
-        if ( isSupportMultiInstance( id ) )
-            _goNextWithMultiMode( id, hash[ _ARGS ], fromUser, fromUri );
-        else
-            _goNext( id, hash[ _ARGS ], fromUser, fromUri );
-    };
-
-    /* TODO(XCL): boot in #!- */
-    var _triggerGoBack = function() {
-        back( 1 );
-    };
-
-    /**
-     * 前往下一步 fragment.
-     *
-     * @param id
-     * @param args (optional)
-     * @param fromUser (optional)
-     * @param fromUri (optional)
-     * @private
-     */
-    function _goNext(id, args, fromUser, fromUri) {
-        /* 更新 args */
-        _overrideArgs( id, args );
-
-        /* 前往该 view */
-        _go( id, fromUri )
-    }
-
-    function _goNextWithMultiMode(id, args, fromUser, fromUri) {
-        /**
-         * Step 1: 是否支持多实例
-         * Step 2: 如果支持看实例是否被创建
-         * Step 3: 前往实例
-         */
-
-        /**
-         * 对于多实例 fragment 我们使用在其基本 id 之上加 args 的 hashcode 用于区分，
-         * 如：ui.view#123456
-         */
-        var deriveId = _calculateDeriveKey( id, args );
-
-        /* XXX: 实际上我们是依赖 args 的不同来维护多实例，但这并不意味着允许 args 为 null */
-        if ( id == deriveId ) {
-            _goNext( id, args, fromUser, fromUri );
-            return;
-        }
-
-        _exist( deriveId ) || _buildDerive( id, deriveId, args );
-
-        _go( deriveId, fromUri )
-    }
-
-    /**
-     * 设置 GPU 硬件加速开启状态.
-     *
-     * @param viewport
-     * @param enabled
-     */
-    function setGPUAcceleratedCompositingEnabled(viewport, enabled) {
-        var flag = 'x-ui';
-
-        viewport = $(viewport);
-
-        if ( enabled )
-            viewport.hasClass( flag ) || viewport.addClass( flag );
-        else
-            viewport.hasClass( flag ) && viewport.removeClass( flag );
-    }
+   /* ----------------------------------------------------------------------- */
 
     /* TODO(XCL): addEventListener */
     _LISTENER_HASH_CHANGE in win && ( window[ _LISTENER_HASH_CHANGE ] =
