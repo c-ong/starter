@@ -246,19 +246,23 @@ body {
 
 @-webkit-keyframes fragment-cover-exit {
     from {
+        -webkit-transform: translateY(0);
         transform: translateY(0);
         /*opacity: 1;*/
     }
     to {
+        -webkit-transform: translateY(100%);
         transform: translateY(100%);
         /*opacity: 0;*/
     }
 }@keyframes fragment-cover-exit {
     from {
+        -webkit-transform: translateY(0);
         transform: translateY(0);
         /*opacity: 1;*/
     }
     to {
+        -webkit-transform: translateY(100%);
         transform: translateY(100%);
         /*opacity: 0;*/
     }
