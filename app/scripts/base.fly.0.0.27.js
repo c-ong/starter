@@ -79,6 +79,20 @@
         isDom       = function(who) { return $.isPlainObject(who)
             && who.nodeType > 0 },
 
+        /* FIXME(XCL): 这里我们使用 JSON.stringify 给出的结果来计算 hash code, 数据结构较为简单 */
+        stringify   = JSON.stringify/*(function(JSON) {
+            return (JSON && 'stringify' in JSON) ? JSON.stringify : function (map) {
+                var buffer = [];
+
+                for ( var key in map ) {
+                    if ( map.hasOwnProperty( key ) )
+                        buffer.push( key, ':', stringify( map[ key ] ) );
+                }
+
+                return '{' + buffer.join( ',' ) + '}';
+            }
+        })(JSON)*/,
+
         /* 抛出未实现异常, 仅用于开发期间防止无效的调用 */
         throwNiyError = function() { throw new Error( 'Not implement yet!' ) };
 
@@ -140,6 +154,8 @@
         isFunction:     isFunction,
         isNumber:       isNumber,
         isDom:          isDom,
+
+        stringify:      stringify,
 
         throwNiyError:  throwNiyError,
 
@@ -1192,8 +1208,12 @@
     }
 
     function _hasFragmentTransInProcessing() {
+        var ret = _in_transaction_;
+        if ( ret ) {
+            /*alert('transaction: ' + ret);*/
+        }
         /*_dumpTrans('Lock');*/
-        return _in_transaction_;
+        return ret;
     }
 
     /**
@@ -1213,6 +1233,7 @@
 
         /* 暂时用 History API */
         history.go( fromUri ? _MAGIC_BACK_FIRER : _STANDARD_BACK );
+
         /*_performBack()*/
     }
 
@@ -1359,7 +1380,7 @@
 
     /* TODO(XCL): */
     function checkRuntime() {
-        /* Object.keys && onhashchange && onpopstate && more... */
+        /* Object.keys && onhashchange && onpopstate && JSON && more... */
     }
 
     function sort(args) {
@@ -1418,7 +1439,7 @@
 
     function _flattenArgs(args) {
         try {
-            return JSON.stringify( sort( args ) )
+            return /*JSON.stringify*/$lr.stringify( sort( args ) )
         } catch (ignored) {
             return null
         }
@@ -1528,7 +1549,7 @@
         if ( ! $lr.isString( fx ) )
             return _TRANSITION_NONE;
 
-        var schema = _transits[ _resolveFx( fx ) ];
+        var scheme = _transits[ _resolveFx( fx ) ];
 
         /**
          *              front        rear
@@ -1539,8 +1560,8 @@
         var checkRear  = forward ? 'popExit' : 'exit',
             checkFront = forward ? 'enter'   : 'popEnter';
 
-        var rear  = schema[checkRear ] && _buildAnimationName( fx, forward, 1 );
-        var front = schema[checkFront] && _buildAnimationName( fx, forward, 0 );
+        var rear  = scheme[checkRear ] && _buildAnimationName( fx, forward, 1 );
+        var front = scheme[checkFront] && _buildAnimationName( fx, forward, 0 );
 
         /*var ret = { rear: rear, front: front };
         console.log(JSON.stringify( ret ));*/
@@ -1777,7 +1798,7 @@
         else
             _pushState( state, title, hash );
 
-         _currentState = history.state;
+         _currentState = state;
     }
 
     function _setupInitialState(/* fragment */initial, from_uri) {
@@ -1800,7 +1821,7 @@
             initial[ _TITLE ],
             _buildInnerHashByFragment( initial ) );
 
-        _currentState = history.state;
+        _currentState = state/*history.state*/;
     }
 
     /**
@@ -1930,7 +1951,7 @@
     /* 将 fx 置为全局可见 */
     win.fx = fx;
 
-    function _makeAnimationSchema(/* enter, popExit, popEnter, exit */) {
+    function _makeAnimationScheme(/* enter, popExit, popEnter, exit */) {
         if ( 1 == arguments.length )
             return arguments[ 0 ];
 
@@ -1945,21 +1966,21 @@
 
     /**
      * 指定切换动作对应的4个环节是否需要
-     * @type {{AnimationSchema}}
+     * @type {{AnimationScheme}}
      * @private
      */
     var _transits = {};
 
-    _transits[fx.slide] = _makeAnimationSchema(
+    _transits[fx.slide] = _makeAnimationScheme(
         _TRANSIT_YES, _TRANSIT_YES,
         _TRANSIT_YES, _TRANSIT_YES );
-    _transits[fx.cover] = _makeAnimationSchema(
+    _transits[fx.cover] = _makeAnimationScheme(
         _TRANSIT_YES, _TRANSIT_YES,
         _TRANSIT_YES, _TRANSIT_YES );
-    _transits[fx.fade] = _makeAnimationSchema(
+    _transits[fx.fade] = _makeAnimationScheme(
         _TRANSIT_YES, _TRANSIT_NONE,
         _TRANSIT_YES, _TRANSIT_NONE );
-    _transits[fx.none] = _makeAnimationSchema(
+    _transits[fx.none] = _makeAnimationScheme(
         _TRANSIT_NONE );
 
     /* OPEN, CLOSE, FADE, SLIDE */
@@ -2608,7 +2629,7 @@
      * @private
      */
     function _isSameArgs(l, r) {
-        return JSON.stringify( l ) === JSON.stringify( r )
+        return /*JSON.stringify*/$lr.stringify( l ) === /*JSON.stringify*/$lr.stringify( r )
     }
 
     /**
@@ -2734,7 +2755,7 @@
     }
 
     function _checkStateEvent(/* PopStateEvent */event) {
-        return event['state'] && _IDX in event.state;
+        return event['state'] && _IDX in event['state'];
     }
 
     /* 如果跳转到其它页面当后退至当前页面则可能 stack 丢失(RELOAD) */
@@ -2742,7 +2763,7 @@
         /*$lr.dev && console.log( "history entries: %s", history.length );*/
         /**
          * FIXME(XCL): 如果正在进行 trans 时触发 pop state 则说明是为了修正来自用户的
-         *              快速 touch 操作来的 fargmnet 无跳转的问题, 此时仅仅是进行
+         *              快速 touch 操作来的 fragment 无跳转的问题, 此时仅仅是进行
          *              pop back 操作
          */
         /*if ( _isLocked() )
@@ -3300,8 +3321,7 @@
 
     /* Manipulating the browser history */
     historyApiSupported
-        && window.addEventListener( _LISTEN_WINDOW_POP_STATE,
-        _popStateHandler );
+        && (window.addEventListener( _LISTEN_WINDOW_POP_STATE, _popStateHandler ) );
 
     /* 配置 CSS Transform 硬件加速 */
     (function(viewport) {
