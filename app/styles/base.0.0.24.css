@@ -60,7 +60,7 @@ body {
     /* 考虑在 X5 上关掉 transform http://x5.tencent.com/doc?id=1002#_1.1 */
     /*http://stackoverflow.com/questions/12643240/improving-css3-transition-performance*/
     /*will-change: transform;*/
-    /*-webkit-transform: translate3d(0, 0, 0);*/
+    -webkit-transform: translate3d(0, 0, 0);
     transform: translate3d(0, 0, 0);
 
     /*will-change: transform;*/
@@ -196,16 +196,34 @@ body {
 }
 
 /* Fragment Cover 动作定义 */
-@keyframes fragment-cover-enter {
+@-webkit-keyframes fragment-cover-enter {
     from {
+        -webkit-transform: translateY(80%);
         transform: translateY(80%);
     }
     to {
+        -webkit-transform: translateY(0);
+        transform: translateY(0);
+    }
+}@keyframes fragment-cover-enter {
+    from {
+        -webkit-transform: translateY(80%);
+        transform: translateY(80%);
+    }
+    to {
+        -webkit-transform: translateY(0);
         transform: translateY(0);
     }
 }
 
-@keyframes fragment-cover-pop-exit {
+@-webkit-keyframes fragment-cover-pop-exit {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: .8;
+    }
+}@keyframes fragment-cover-pop-exit {
     from {
         opacity: 1;
     }
@@ -214,7 +232,14 @@ body {
     }
 }
 
-@keyframes fragment-cover-pop-enter {
+@-webkit-keyframes fragment-cover-pop-enter {
+    from {
+        opacity: .8;
+    }
+    to {
+        opacity: 1;
+    }
+}@keyframes fragment-cover-pop-enter {
     from {
         opacity: .8;
     }
@@ -223,7 +248,16 @@ body {
     }
 }
 
-@keyframes fragment-cover-exit {
+@-webkit-keyframes fragment-cover-exit {
+    from {
+        transform: translateY(0);
+        /*opacity: 1;*/
+    }
+    to {
+        transform: translateY(100%);
+        /*opacity: 0;*/
+    }
+}@keyframes fragment-cover-exit {
     from {
         transform: translateY(0);
         /*opacity: 1;*/
@@ -235,7 +269,14 @@ body {
 }
 
 /* Fragment Fade 效果定义 */
-@keyframes fragment-fade-enter {
+@-webkit-keyframes fragment-fade-enter {
+    from {
+        opacity: .5;
+    }
+    to {
+        opacity: 1;
+    }
+}@keyframes fragment-fade-enter {
     from {
         opacity: .5;
     }
@@ -243,10 +284,17 @@ body {
         opacity: 1;
     }
 }
-@keyframes fragment-fade-pop-exit {
+/*@keyframes fragment-fade-pop-exit {*/
     /*none*/
-}
-@keyframes fragment-fade-pop-enter {
+/*}*/
+@-webkit-keyframes fragment-fade-pop-enter {
+    from {
+        opacity: .5;
+    }
+    to {
+        opacity: 1;
+    }
+}@keyframes fragment-fade-pop-enter {
     from {
         opacity: .5;
     }
@@ -254,9 +302,9 @@ body {
         opacity: 1;
     }
 }
-@keyframes fragment-fade-exit {
+/*@keyframes fragment-fade-exit {*/
     /*none*/
-}
+/*}*/
 
 /*------------------------------------------------------*/
 /* Dialog mask fade-in-out 效果定义 */
