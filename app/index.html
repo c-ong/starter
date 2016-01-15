@@ -30,9 +30,10 @@
 <script type="text/javascript" charset="utf-8"
         src="libs/zepto/fx.js?1.1.6"></script>
 <script type="text/javascript" charset="utf-8"
-        src="scripts/base.fly.0.0.26.js?6"></script>
+        src="scripts/base.fly-dev.0.0.27.js?6"></script>
 
 <script defer>
+    /* 定义一个 dialog */
     var dialog_content = '<div onclick="lairen.dialog().show()" style="border: 1px solid red; padding: 10px;">点我再打开一个 Dialog</div>'
             + '<button id="yes">Button</button>';
     var x = lairen.dialog(dialog_content, [{
@@ -43,7 +44,9 @@
         }
     }]);
 
-    // ------------------------------------------------------------------------
+    /* ---------------------------------------------------------------------- */
+
+    /* 定义第一个 fragment */
     var config = {
         args: {key: 'value'},
 
@@ -63,24 +66,26 @@
         '</div>',
 
         onStart: function () {
-//            console.log('onStart')
         },
 
         onResume: function () {
-//            console.log('onResume ' + JSON.stringify(this.getArgs()))
         }
     };
-    // 定义一个 fragment
+
     var home = $Fragment.define('view.home', config);
 
-    // ------------------------------------------------------------------------
+    /* ---------------------------------------------------------------------- */
 
+    /* 定义第二个 fragment */
     $Fragment.define('view.about',
             {
+                /* 标题 */
                 title: 'about',
+
+                /* 指定切换效果 */
                 animation: fx.fade,
 
-                // 可以通过该字段来指定默认内容也可以调用 render 方法来填充内容
+                /* 可以通过该字段来指定默认内容也可以调用 render 方法来填充内容 */
                 html: '<div id="starter"><div style="padding: 16px 0;">View 后退使用演示</div>' +
                 '<button onclick="back()">后退 <<-</button>' +
                 '<br/>' +
@@ -88,21 +93,28 @@
                 '<button onclick="go(\'login\')">加载并呈现 Login UI ->></button>' +
                 '</div>',
 
-                /*animation: fx.slide,*/
-
                 onStart: function () {
-//                    console.log('onStart')
                 },
 
                 onResume: function () {
-//                    this.getArgs()['key'];
-//                    console.log('onResume ' + JSON.stringify(this.getArgs()))
+                    console.log('onResume ' + JSON.stringify(this.getArgs()));
                 }
             });
 
-    // ------------------------------------------------------------------------
+    /* ---------------------------------------------------------------------- */
 
+    /* 定义第三个 fragment 定义 */
     var config_login = {
+
+        trigger: {
+            on: 'view.about',
+
+            state: 'show',
+
+            do: function() {
+                alert('I will fire!');
+            }
+        },
 
         onReload: function() {
             // 在这里重新载入数据
@@ -110,7 +122,6 @@
         },
 
         onStart: function () {
-//            console.log('onStart')
         },
 
         onCreateView: function() {
@@ -118,7 +129,6 @@
         },
 
         onResume: function () {
-//            console.log('onResume')
         },
 
         onRendered: function() {
@@ -135,13 +145,13 @@
         },
 
         onDestroyView: function () {
-        },
+        }
     };
-    // 定义一个 fragment
     var login = $Fragment.define('login', config_login);
 
-    // ------------------------------------------------------------------------
+    /* ---------------------------------------------------------------------- */
 
+    /* 配置 fragment 切换等事件 */
     $Fragment.config({
         onFragmentChangeBefore: function() {
             console.dir( arguments );
@@ -152,8 +162,7 @@
         }
     });
 
-    // 设置默认界面
+    /* 设置默认界面, 并呈现(如果当前 URL 不包含有效的 fragment 标识) */
     $Fragment.bootstrap('view.home');
-
 </script>
 </html>
