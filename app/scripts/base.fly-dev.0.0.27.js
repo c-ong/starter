@@ -2,8 +2,8 @@
  * 该代码包含以下内容:
  *
  * 1: 基本函数;
- * 2: Dialog 实现;
- * 3: Fragment 实现;
+ * 2: Dialog 实现(使用参与 index.html 例子);
+ * 3: Fragment 实现(使用参与下面注释 及 index.html 例子);
  */
 
 /**
@@ -124,6 +124,7 @@
 
     /**
      * 执行一个 GET 请求.
+     * @deprecated
      */
     function get(/* url, data, success, error, dataType */) {
         return $.ajax( _parseArgs.apply( null, arguments ) )
@@ -131,6 +132,7 @@
 
     /**
      * 执行一个 POST 请求.
+     * @deprecated
      */
     function post(/* url, data, success, error, dataType */) {
         var options = _parseArgs.apply( null, arguments );
@@ -139,12 +141,13 @@
         $.ajax( options );
     }
 
+    /* 我们 lairen 开放的 fn 及 property */
     $lr = {
         undefined:      undefined,
         emptyFn:        emptyFn,
         win:            win,
 
-        /* 是否为开发模式 */
+        /* 是否为开发模式(待移除) */
         dev:            0,
 
         /* 用于判断类型的函数 */
@@ -155,6 +158,7 @@
         isNumber:       isNumber,
         isDom:          isDom,
 
+        /* 低版本可能没有提供 JSON.stringify */
         stringify:      stringify,
 
         throwNiyError:  throwNiyError,
@@ -167,7 +171,8 @@
         os:             os,
         browser:        browser,
 
-        cubic_bezier:   'cubic-bezier(0.4, 0, 0.2, 1)'
+        /* Animation timing(Default) */
+        cubic_bezier:   'cubic-bezier(.1,.5,.1,1)'/*'cubic-bezier(.4, 0, .2, 1)'*/
 
         /* 提供了短名方法,用于访问 console 方法 */
         /*
@@ -481,7 +486,7 @@
             id: stackId,
 
             /* 是否可取消 */
-            cancelable: !!cancelable || 1,
+            cancelable: !! cancelable || 1,
 
             /* 是否已被 dismiss */
             dismissed: 0,
@@ -669,7 +674,7 @@
         return _build( html, cancelable, actions )
     };
 
-    /* TODO: auto dismiss */
+    /* TODO(XCL): auto dismiss */
 }(lairen);
 
 /**
@@ -797,21 +802,22 @@
         METHOD_HANDLERS_MAPPING[ lifecycle ] = SUPPORTED_HANDLERS[ idx ]
     } );
 
+    /* 为 fragment 实例开放的方法 */
     var _METHODS = [
         /* 设置 title, 注意不是所有的场景都支持,如: 微信 */
-        [ 'setTitle',           setTitle    ],
+        [ 'setTitle',           setTitle         ],
 
         /* 判别是否可见 */
-        [ 'isVisible',          isVisible   ],
+        [ 'isVisible',          isVisible        ],
 
         /* 获取参数对儿 */
-        [ 'getArgs',            getArgs     ],
+        [ 'getArgs',            getArgs          ],
 
         /* 填充内空 */
-        [ 'render',             render      ],
+        [ 'render',             render           ],
 
         /* 获取该 Fragment 的容器 */
-        [ 'getContainer',       getContainer ],
+        [ 'getContainer',       getContainer     ],
 
         /* 询问是否内容已经加载 */
         [ 'hasContentLoaded',   hasContentLoaded ],
@@ -848,6 +854,11 @@
      */
     var _fragments  = {},
         _handlers   = {};
+
+
+    /* ------------------------------------------------------------------------
+     *                     以上为一些 fn 的引用, 及常量, 容器的定义
+     * --------------------------------------------------------------------- */
 
     /**
      * 当前 fragment。
@@ -1707,7 +1718,6 @@
             else
                 animation = _getAnimation( next );
 
-
             transit         = _buildTransition( animation, _FORWARD );
             postCommitTrans = !! transit.rear;
         }
@@ -1724,7 +1734,6 @@
          * show -> front
          * 应用 animation 时亦是如此
          */
-
         _casStackIfNecessary( current, next );
 
         /* 如果为首次呈现则需要执行一系列的初始动作 */
@@ -2016,6 +2025,29 @@
                 transit.front,
                 $.fx.speeds.slow,
                 $lr.cubic_bezier/*'linear'*/ )
+
+        /* 提取并执行触发器定义的操作 */
+        _fireTriggerIfNecessary.call( target, 'show');
+    }
+
+    function _fireTriggerIfNecessary(state) {
+        /* 待触发的 trigger 队列 */
+        var triggers = _extractTriggers(this[_ID], state);
+        /* 没有与之关联的 trigger */
+        if ( ! triggers )
+            return;
+
+        var idx,        /* 触发器队列索引 */
+            trigger,    /* 具体的触发器   */
+            action;     /* callback     */
+
+        for ( idx in triggers) {
+            trigger = triggers[idx];
+            action = trigger['action'];
+
+            /* 如果 action 为 fn 则直接执行 */
+            $lr.isFunction( action ) && (action());
+        }
     }
 
     /**
@@ -2254,17 +2286,17 @@
      * 构建一个 fragment.
      *
      * @param id 唯一的 fragment 标识,如: ui.about
-     * @param config fragment 的配置数据
+     * @param props fragment 的配置数据
      * @returns fragment
      * @private
      */
-    function _register(id, config) {
+    function _register(id, /* properties */props) {
         /* TODO: validate the view id */
         if ( ! isString( id ) )
             throw Error( "Invalid id(" + id + ")" );
 
-        if ( $lr.isUndefined( config ) )
-            throw Error( "Must be specify the config for " + id );
+        if ( $lr.isUndefined( props ) )
+            throw Error( "Must be specify the props for " + id );
 
         /* TODO: 延迟初始化 */
         _ensure();
@@ -2283,8 +2315,8 @@
 
         /* TODO: 这样会造成祖级元素无法被合理使用 */
         /* 是否为祖先级实例 */
-        var isAncestor = _MULTIPLE_INSTANCES in config
-            && !! config[ _MULTIPLE_INSTANCES ];
+        var isAncestor = _MULTIPLE_INSTANCES in props
+            && !! props[ _MULTIPLE_INSTANCES ];
 
         /* 分配一个 idx 实际上就是 z-index */
         var stackIdx = _alloZIndex( $lr.FRAGMENT ),
@@ -2295,9 +2327,9 @@
         /* layout[ 0 ][ 'id' ] = _fragmentSequenceId( stackIdx ); */
 
         /* 处理依赖项 */
-        isPlainObject( config )
-        && _REQUIRES in config
-        && ( requires = _resolveRequires( config.requires ) );
+        isPlainObject( props )
+        && _REQUIRES in props
+        && ( requires = _resolveRequires( props.requires ) );
 
         /* ----------------------------------------------------------------- */
 
@@ -2305,7 +2337,7 @@
         _bindMethods( frag );
 
         /* 处置 Handlers */
-        _settleHandlers( id, config );
+        _settleHandlers( id, props );
 
         /* 初始化依赖项 */
         requires && _importRequiresIfNecessary( requires );
@@ -2322,15 +2354,15 @@
         frag[ _EL_ ][ _LAYOUT_ ] = layout;
 
         /* 标题 */
-        isString( config[ _TITLE ] )
-        && (frag[ _TITLE ] = config[ _TITLE ]);
+        isString( props[ _TITLE ] )
+        && (frag[ _TITLE ] = props[ _TITLE ]);
 
         /* 解析后的 hash, lairen.ui.home -> lairen/ui/home */
         frag[ _HASH ]       = _makeIdUrlify( id );
 
         /* To retain the arguments if present. */
-        _ARGS in config
-        && (frag[ _ARGS ] = config[ _ARGS ]);
+        _ARGS in props
+        && (frag[ _ARGS ] = props[ _ARGS ]);
 
         /* 是否支持多实例, 如支持多实例则祖先仅终不会被添加至 DOM 中 */
         isAncestor
@@ -2341,24 +2373,66 @@
         );
 
         /* 解析切换效果配置 */
-        _settleAnimation( frag, config );
+        _settleAnimation( frag, props );
 
         /* ----------------------------------------------------------------- */
 
         /* 填充 HTML 片段，如果已指定该字段 */
         /* if ( ! isAncestor ) { */
-        if ( _HTML in config ) {
-            frag[ _HTML ] = config[ _HTML ];
+        if ( _HTML in props ) {
+            frag[ _HTML ] = props[ _HTML ];
             _invokeRender( frag, frag );
-        } else if ( _URL in config ) {
-            frag[ _URL ] = config[ _URL ];
+        } else if ( _URL in props ) {
+            frag[ _URL ] = props[ _URL ];
             _invokeRender( frag, frag );
         }
         /* } */
 
-        /* (config && _HTML in config)
-              && isString( config[ _HTML ] )
-                  && layout.html( config[ _HTML ] ); */
+        /* (props && _HTML in props)
+              && isString( props[ _HTML ] )
+                  && layout.html( props[ _HTML ] ); */
+
+        /* ----------------------------------------------------------------- */
+
+        var triggerDefine = props['trigger'];
+
+        if ( triggerDefine ) {
+            var on      = triggerDefine['on'],
+                state   = triggerDefine['state'],
+                action  = triggerDefine['action'];
+
+            if ( on && state && action ) {
+                var host    = _triggers[on];
+
+                /* 首次开劈空间(trigger 被触发完了以后应该释放空间) */
+                if ( ! host ) {
+                    host = {};
+                    _triggers[on] = host;
+                }
+
+                var stack = host[state];
+
+                /* 该 state 首个 trigger */
+                if ( ! stack ) {
+                    stack = [];
+                    host[state] = stack;
+                }
+
+                var trigger = {
+                    target: id,
+                    action: action };
+
+                /* 不设置 once 默认指只触发一次 */
+                if ( 'once' in triggerDefine && triggerDefine.once ) {
+                    trigger['once'] = 1;
+                }
+
+                stack.push( trigger );
+            }
+
+            /*console.log( _triggers );*/
+            /*console.log( JSON.stringify(_triggers) );*/
+        }
 
         /* ----------------------------------------------------------------- */
 
@@ -2376,7 +2450,53 @@
     }
 
     /**
-     * 当一个 fragment 被定义为支持 pre-load 时该标识默认为 true(也就是 config 中已经指
+     * 提取依赖当前 fragment 的 triggers.
+     *
+     * @param host
+     * @param state
+     * @returns {Array}
+     * @private
+     */
+    function _extractTriggers(host, state) {
+        var host = _triggers[host],
+            result;
+
+        /* TODO(XCL): 是否有必要触发一次后移除 */
+        if ( host ) {
+            var origin = host[state],
+                trigger;
+
+            /* Clone */
+            result = origin.slice( 0 );
+
+            var idx;
+            /* 移除只触发一次的 trigger */
+            for ( idx in origin ) {
+                trigger = origin[idx];
+
+                'once' in trigger
+                    && trigger['once']
+                    && ( origin.splice(idx), 1 );
+            }
+
+            /* 如果有只触发一次的 trigger 被移除, 则需要同步至 _triggers */
+            origin.length != result.length
+                && (_triggers[host] = host[state] = origin);
+        }
+
+        return result;
+    }
+
+    /**
+     * 存放 triggers.
+     *
+     * @type {Map{Map{Array}}}
+     * @private
+     */
+    var _triggers = {};
+
+    /**
+     * 当一个 fragment 被定义为支持 pre-load 时该标识默认为 true(也就是 props 中已经指
      * 定 html 或 url).
      *
      * @param fragment
@@ -2404,14 +2524,14 @@
      * 解析切换效果配置.
      *
      * @param fragment
-     * @param config
+     * @param props
      * @private
      */
-    function _settleAnimation(fragment, config) {
-        if ( ! _ANIMATION in config )
+    function _settleAnimation(fragment, props) {
+        if ( ! _ANIMATION in props )
             return;
 
-        fragment[_ANIMATION] = _resolveFx( config[ _ANIMATION ] );
+        fragment[_ANIMATION] = _resolveFx( props[ _ANIMATION ] );
     }
 
     /**
@@ -2683,6 +2803,7 @@
 
     /**
      * TODO:
+     * Fake go(switch)
      * observer for load trigger(Once OR Ever)(Loading Strategy)
      * {fade:true}
      * bind
@@ -2890,7 +3011,7 @@
          new Date().getTime() );*/
 
         var oldInnerHash  = _convertCurrentlyHashToInner(),
-        /* 当前 Browser 中的 hash */
+            /* 当前 Browser 中的 hash */
             newRawHash    = location.hash;
 
         /* TODO(XCL): Check for transaction timed out... */
@@ -2904,9 +3025,7 @@
              }*/
 
             return;
-        }/* else {
-         _roll_back = null;
-         }*/
+        }
 
         _handleHashChange( oldInnerHash, newRawHash );
 
@@ -3051,20 +3170,20 @@
     /* --------------------------------------------------------------------- */
 
     /**
-     * TODO(XCL): Mixed configs
+     * TODO(XCL): Mixed props
      *
      * $Fragment.define(['home', {title:'Home'}, 'about', {title:'About'}]);
      */
-    $lr.fragment = function(id, config) {
+    $lr.fragment = function(id, props) {
         /* TODO: alias, short */
-        return _register( id, config )
+        return _register( id, props )
     };
 
     /**
      * $Fragment 开放的静态 fn, 用于定义, 跳转控制.
      *
      * @type { {
-     *          config: config,
+     *          config: {Map},
      *          title: string,
      *          define: (lairen.fragment|*),
      *          bootstrap: win.$Fragment.bootstrap,
@@ -3116,7 +3235,7 @@
          * $Fragment.define(
          *      'namespace.views.about',      // fragment 唯一标识，必选项
          *
-         *      config {
+         *      {
          *           title:    'Untitled',    // 标题用于显示在支持的浏览器上
          *
          *           multitask: 1,            // 标明该 fragment 是否支持多实例,
@@ -3205,8 +3324,8 @@
          *  5: getContainer 获取 fragment 的容器
          * </pre>
          *
-         * @param id
-         * @param config
+         * @param id 用来标识 fragment 的唯一
+         * @param {Map} props 定义 fragment 配置及 handler.
          * @returns {object} 一个 fragment 实例
          */
         define:     $lr.fragment,
@@ -3268,12 +3387,14 @@
          *
          * @param id
          * @param args
+         * @deprecated
          */
         update:     $lr.throwNiyError,
 
         /**
          * 销毁当前 fragment & 返回上一级.
          * Note: 如果当前为根级则该方法不会被执行
+         * @deprecated
          */
         finish:     $lr.throwNiyError,
 
@@ -3283,6 +3404,7 @@
          *
          * @param id
          * @params args
+         * @deprecated
          */
         finishAndGo: $lr.throwNiyError,
 
@@ -3290,6 +3412,7 @@
          * 回收一个 fragment.
          *
          * @param id
+         * @deprecated
          */
         destroy:    $lr.throwNiyError
     };
