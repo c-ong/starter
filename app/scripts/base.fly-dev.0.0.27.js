@@ -172,7 +172,8 @@
         browser:        browser,
 
         /* Animation timing(Default) */
-        cubic_bezier:   'cubic-bezier(.1,.5,.1,1)'/*'cubic-bezier(.4, 0, .2, 1)'*/
+        cubic_bezier:   'cubic-bezier(.4, 0, .2, 1)',
+        brisk_cubic_bezier:   'cubic-bezier(.1,.5,.1,1)'
 
         /* 提供了短名方法,用于访问 console 方法 */
         /*
@@ -836,7 +837,7 @@
      * @type {undefined}
      * @private
      */
-    var _fragment_root = undefined;
+    var _fragment_root;
 
     /**
      * fragment DOM 节点模板.
@@ -844,7 +845,7 @@
      * @type {DOM}
      * @private
      */
-    var _FRAGMENT_TEMPLATE = undefined;
+    var _FRAGMENT_TEMPLATE;
 
     /**
      * fragment 容器.
@@ -866,7 +867,7 @@
      * @type {fragment}
      * @private
      */
-    var _current    = undefined;
+    var _current;
 
     function _fragmentSequenceId(stackId) {
         return 'lairen-layout--fragment_' + stackId
@@ -1577,7 +1578,10 @@
         /*var ret = { rear: rear, front: front };
         console.log(JSON.stringify( ret ));*/
 
-        return { rear: rear, front: front };/*ret*/
+        return {
+            rear: rear,
+            front: front ,
+            ease: scheme['ease'] || $lr.cubic_bezier };/*ret*/
     }
 
     function _check() {
@@ -1960,17 +1964,23 @@
     /* 将 fx 置为全局可见 */
     win.fx = fx;
 
-    function _makeAnimationScheme(/* enter, popExit, popEnter, exit */) {
+    function _makeAnimationScheme(/* enter, popExit, popEnter, exit, ease */) {
+        var ret;
+
         if ( 1 == arguments.length )
             return arguments[ 0 ];
 
-        return {
+        ret = {
             /* forward */
             enter:    arguments[ 0 ],   popExit: arguments[ 1 ],
 
             /* backward */
             popEnter: arguments[ 2 ],   exit:    arguments[ 3 ]
-        }
+        };
+
+        arguments[4] && (ret['ease'] = arguments[4]);
+
+        return ret;
     }
 
     /**
@@ -1985,7 +1995,8 @@
         _TRANSIT_YES, _TRANSIT_YES );
     _transits[fx.cover] = _makeAnimationScheme(
         _TRANSIT_YES, _TRANSIT_YES,
-        _TRANSIT_YES, _TRANSIT_YES );
+        _TRANSIT_YES, _TRANSIT_YES,
+        $lr.brisk_cubic_bezier );
     _transits[fx.fade] = _makeAnimationScheme(
         _TRANSIT_YES, _TRANSIT_NONE,
         _TRANSIT_YES, _TRANSIT_NONE );
@@ -2024,7 +2035,7 @@
             layout.animate(
                 transit.front,
                 $.fx.speeds.slow,
-                $lr.cubic_bezier/*'linear'*/ )
+                transit.ease/*$lr.cubic_bezier*//*'linear'*/ )
 
         /* 提取并执行触发器定义的操作 */
         _fireTriggerIfNecessary.call( target, 'show');
@@ -2072,7 +2083,7 @@
             layout.animate(
                 transit.rear,
                 $.fx.speeds.slow,
-                $lr.cubic_bezier/*'linear'*/,
+                transit.ease/*$lr.cubic_bezier*//*'linear'*/,
                 function () {
                     layout.hide();
 
@@ -3445,4 +3456,17 @@
         /*setGPUAcceleratedCompositingEnabled( viewport, 0 );*/
         /*setGPUAcceleratedCompositingEnabled( viewport, ! ($lr.os.ios && $lr.browser.qqx5) );*/
     }(document.body));
+
+    /* -----------------------------------------------------------------------
+     *                       以下为 Swipe to refresh 扩展提供支持
+     * --------------------------------------------------------------------- */
+
+    /**
+     * 获取不当 fragment.
+     *
+     * @returns {fragment}
+     */
+    win.getCurrentlyFragment = function() {
+        return _current;
+    }
 }(lairen);
