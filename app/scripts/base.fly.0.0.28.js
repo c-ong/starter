@@ -2405,6 +2405,7 @@
 
         /* ----------------------------------------------------------------- */
 
+        /* Experiment: 解析 trigger */
         var triggerDefine = props['trigger'];
 
         if ( triggerDefine ) {
