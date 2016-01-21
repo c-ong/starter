@@ -1260,8 +1260,15 @@
      * 请求进行后退操作, 如果 BackStack 有可用的记录.
      */
     function back(fromUri) {
-        if ( ! canBack() )
+        console.log("InProcessing %s, fromUri %s, backStack %s", _hasFragmentTransInProcessing(), fromUri, _hasBackStackRecords() );
+        /*if ( ! canBack() )*/
+        if ( _hasFragmentTransInProcessing() )
             return;
+
+        if ( fromUri && ! _hasBackStackRecords() ) {
+            _navigateUpTo('home');
+            return
+        }
 
         /* 暂时用 History API */
         history.go( fromUri ? _MAGIC_BACK_FIRER : _STANDARD_BACK );
@@ -1276,11 +1283,11 @@
      * @private
      */
     function _navigateUpTo(up) {
-
+        _performNavigateUpTo(up)
     }
 
-    function _performNavigateUpTo() {
-
+    function _performNavigateUpTo(up) {
+        _performGo.call( getFragment(up), /*fromUri*/1, /*animation*/fx.slide, /*reverse*/1 )
     }
 
     /* --------------------------------------------------------------------- */
@@ -1795,7 +1802,7 @@
          * show -> front
          * 应用 animation 时亦是如此
          */
-        _casStackIfNecessary( current, next );
+        _casStackIfNecessary( reverse ? next : current, reverse ? current : next );
 
         /* 如果为首次呈现则需要执行一系列的初始动作 */
         ( layout[ 0 ].parentNode && '' != layout.html() )
