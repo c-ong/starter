@@ -1339,7 +1339,7 @@
      * 构建一个 hash 串用于更新至浏览器
      *
      * @param fragment
-     * @returns {InnerHash}
+     * @returns {string}
      * @private
      */
     function _buildInnerHashByFragment(fragment) {
@@ -1355,21 +1355,21 @@
         return x.join( '' )
         */
 
-        var data = {};
-        data[ _HASH ] = fragment[ _HASH ];
-        data[ _ARGS ] = fragment[ _ARGS ];
+        var fragSpec = {};
+        fragSpec[ _HASH ] = fragment[ _HASH ];
+        fragSpec[ _ARGS ] = fragment[ _ARGS ];
 
-        return _buildInnerHash( data )
+        return _buildInnerHash( fragSpec )
     }
 
-    function _buildInnerHash(data) {
+    function _buildInnerHash(fragSpec) {
         /* #!id:args */
-        var x = [ _FRAGMENT_HASH_PREFIX, data[ _HASH ] ];
+        var x = [ _FRAGMENT_HASH_PREFIX, fragSpec[ _HASH ] ];
 
-        data[ _ARGS ]
+        fragSpec[ _ARGS ]
         && (
             x.push( _ARG_DELIMITER ),
-            x.push( _argsUrlify( data[ _ARGS ] ) )
+            x.push( _argsUrlify( fragSpec[ _ARGS ] ) )
         );
 
         return x.join( '' )
@@ -2464,6 +2464,24 @@
         /* ----------------------------------------------------------------- */
 
         /* Experiment: 解析 trigger */
+        _registerTriggersIfNecessary( frag, props );
+
+        /* ----------------------------------------------------------------- */
+
+        try {
+            return frag
+        } finally {
+            /* 将定义的 fragment 放入容器 */
+            _add( frag );
+
+            /* 呈现默认 View 如果没有有效的 view id 被指定 */
+            /* FIXME(XCL): 暂时从 bootstrap 调用, 以在 register 过程中调用一些未加载的
+                           fragment */
+            /*! hasFragmentPresented && _setupTopIfMatch( frag )*/
+        }
+    }
+
+    function _registerTriggersIfNecessary(frag, props) {
         var triggerDefine = props['trigger'];
 
         if ( triggerDefine ) {
@@ -2493,29 +2511,13 @@
                     action: action };
 
                 /* 不设置 once 默认指只触发一次 */
-                if ( 'once' in triggerDefine && triggerDefine.once ) {
-                    trigger['once'] = 1;
-                }
+                'once' in triggerDefine && triggerDefine.once && (trigger['once'] = 1);
 
                 stack.push( trigger );
             }
 
             /*console.log( _triggers );*/
             /*console.log( JSON.stringify(_triggers) );*/
-        }
-
-        /* ----------------------------------------------------------------- */
-
-        try {
-            return frag
-        } finally {
-            /* 将定义的 fragment 放入容器 */
-            _add( frag );
-
-            /* 呈现默认 View 如果没有有效的 view id 被指定 */
-            /* FIXME(XCL): 暂时从 bootstrap 调用, 以在 register 过程中调用一些未加载的
-                           fragment */
-            /*! hasFragmentPresented && _setupTopIfMatch( frag )*/
         }
     }
 
@@ -2694,7 +2696,7 @@
      * @returns {{hash: (Array.<T>|string|*|Blob|ArrayBuffer), args: *}}
      * @private
      */
-    var _resolveHash = function(rawHash) {
+    var _resolveFragSpec = function(rawHash) {
         return {
             hash: _extractHash( rawHash ),
             args: _extractArgs( rawHash ) }
@@ -2994,7 +2996,7 @@
      * @private
      */
     var _ORIGIN_HASH = _isFragmentHash( location.hash )
-        ? _resolveHash( location.hash )
+        ? _resolveFragSpec( location.hash )
         : null;
 
     var _onTransEnded = function() {
@@ -3010,25 +3012,25 @@
         if ( ! _delayed_hash_change_event )
             return;
 
-        var oldInnerHash    = _delayed_hash_change_event.oldInnerHash,
+        var oldFragSpec    = _delayed_hash_change_event.oldFragSpec,
             newRawHash      = _delayed_hash_change_event.newRawHash;
 
         /* 标记 delayed event 已处理 */
         _delayed_hash_change_event = undefined;
 
-        _handleHashChange( oldInnerHash, newRawHash )
+        _handleHashChange( oldFragSpec, newRawHash )
     };
 
     /**
      * 将指定的 hash change 事件延迟处理.
      *
-     * @param oldInnerHash
+     * @param oldFragSpec
      * @param newRawHash
      * @private
      */
-    function _postDelayedHashChangeEvent(oldInnerHash, newRawHash) {
+    function _postDelayedHashChangeEvent(oldFragSpec, newRawHash) {
         _delayed_hash_change_event = {
-            oldInnerHash: oldInnerHash,
+            oldInnerHash: oldFragSpec,
             newRawHash: newRawHash };
     }
 
@@ -3051,12 +3053,12 @@
     var _delayed_hash_change_event = undefined;
 
     /**
-     * 提取当前 fragment 的 InnerHash.
+     * 提取当前 fragment 的 FragSpec.
      *
-     * @returns {InnerHash}
+     * @returns {FragSpec}
      * @private
      */
-    function _convertCurrentlyHashToInner() {
+    function _getCurrentlyFragmentSpec() {
         var data = null;
 
         if ( _current ) {
@@ -3080,15 +3082,15 @@
          JSON.stringify( _detect_backward_for_uri ),
          new Date().getTime() );*/
 
-        /* 变更之前的 InnerHash */
-        var oldInnerHash  = _convertCurrentlyHashToInner(),
+        /* 变更之前的 FragSpec */
+        var oldFragSpec  = _getCurrentlyFragmentSpec(),
             /* 当前 Browser 中的 hash */
             newRawHash    = location.hash;
 
         /* TODO(XCL): Check for transaction timed out... */
         if ( _hasFragmentTransInProcessing() ) {
             /* TODO(XCL): postDelayed */
-            _postDelayedHashChangeEvent( oldInnerHash, newRawHash );
+            _postDelayedHashChangeEvent( oldFragSpec, newRawHash );
 
             /*console.log( 'Break now: o : %s n : %s ', hashChangeEvent.oldURL, location.hash );*/
             /*if ( _roll_back != hashChangeEvent.newURL ) {
@@ -3098,45 +3100,45 @@
             return;
         }
 
-        _handleHashChange( oldInnerHash, newRawHash );
+        _handleHashChange( oldFragSpec, newRawHash );
 
         /*_isFragmentHash( newRawHash )
-         && _handleHashChange( oldInnerHash, _resolveHash( newRawHash ) )*/
+         && _handleHashChange( oldFragSpec, _resolveHash( newRawHash ) )*/
     };
 
     /**
      * 处理 hash 变更事件.
      *
-     * @param oldInnerHash {object}
+     * @param oldFragSpec {object}
      * @param newRawHash {string}
      * @private
      */
-    function _handleHashChange(oldInnerHash, /*currently*/newRawHash) {
+    function _handleHashChange(oldFragSpec, /*currently*/newRawHash) {
         /*console.log( 'handleHashChange: [OLD] %s, [NEW] %s, %s',
          JSON.stringify(oldInnerHash), newRawHash, _isInnerRawHash(newRawHash) );*/
         if ( ! _isInnerRawHash( newRawHash ) )
             return;
 
-        _processInnerHashChangedEvent( oldInnerHash, newRawHash )
+        _processFragSepcChangedEvent( oldFragSpec, newRawHash )
     }
 
     /* TODO: To detect the history back act. */
-    function _processInnerHashChangedEvent(oldInnerHash, /*currently*/newRawHash) {
+    function _processFragSepcChangedEvent(oldFragSpec, /*currently*/newRawHash) {
         /* 是否为 up 操作 */
         if ( _isMagicBackHash( newRawHash ) ) {
             _triggerGoBack( _OP_FROM_URI )
         }
         /* 是否为 page hash */
         else if ( _isFragmentHash( newRawHash ) ) {
-            /*console.log( 'Changed: %s, %s', JSON.stringify( oldInnerHash ), newRawHash );*/
+            /*console.log( 'Changed: %s, %s', JSON.stringify( oldFragSpec ), newRawHash );*/
 
             /* TODO(XCL): Filtering and Sanitizing */
-            var resolvedHash = _resolveHash( newRawHash );
+            var resolvedFragSpec = _resolveFragSpec( newRawHash );
 
             /* 是否 hash 真的需要更新 */
             /* 暂时使用 History API */
-            if ( ! _isSameHash( oldInnerHash, resolvedHash ) ) {
-                _triggerGoNext( resolvedHash, /* from_user */1, /* from_uri */1 );
+            if ( ! _isSameHash( oldFragSpec, resolvedFragSpec ) ) {
+                _triggerGoNext( resolvedFragSpec, /* from_user */1, /* from_uri */1 );
                 /*_detect_backward_for_uri = _currentState;*/
             }
         }
@@ -3153,12 +3155,12 @@
     /**
      * 前往指定的 fragment.
      *
-     * @param hash {InnerHash}
+     * @param hash {FragSpec}
      * @param fromUser {boolean} 是否来自用户的形为
      * @param fromUri {boolean}
      * @private
      */
-    var _triggerGoNext = function(/*InnerHash*/hash, fromUser, fromUri) {
+    var _triggerGoNext = function(/*FragSpec*/hash, fromUser, fromUri) {
         var id = _makeIdentify( hash[ _HASH ] );
 
         _requestGo( id, hash[_ARGS], fromUri );
