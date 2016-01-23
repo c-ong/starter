@@ -2321,6 +2321,7 @@
     }
 
     function _copyByClone(source) {
+        /* new this.constructor() */
         var clone = new Fragment();
 
         /* Inherit: 处理依赖项 */
@@ -2356,87 +2357,100 @@
 
     /* ------------------------ Fragment class { ---------------------------- */
 
+    /**
+     * The Fragment model.
+     *
+     * @constructor
+     */
     var Fragment = function() {
+        /* Empty constructor */
     };
 
-    /**
-     * 填充内容, 可以传入 HTML 片段或 URL.
-     *
-     * { html: html }
-     * { url: url, param: params }
-     */
-    Fragment.prototype.render = function (data) {
-        /* TODO: URL 支持参数 */
-        if ( _force_render && ! getContainer.call( this ).parentNode )
-            throw new Error( "You haven't call the show method with this fragment!" );
+    (function (/* Fragment.prototype */_) {
+        /**
+         * 填充内容, 可以传入 HTML 片段或 URL.
+         *
+         * { html: html }
+         * { url: url, param: params }
+         */
+        _.render = function (data) {
+            /* TODO: URL 支持参数 */
+            if ( _force_render && ! getContainer.call( this ).parentNode )
+                throw new Error( "You haven't call the show method with this fragment!" );
 
-        /* 是否能够立刻请求进行 render 操作 */
-        var immediate = data && _HTML in data;
+            /* 是否能够立刻请求进行 render 操作 */
+            var immediate = data && _HTML in data;
 
-        /* Before rendering */
-        immediate && preRender.call( this, data );
+            /* Before rendering */
+            immediate && preRender.call( this, data );
 
-        /* Rendering */
-        immediate
-            ? _renderWithHtml.call( this, data )
-            : ( _URL in data && _renderWithUrl.call( this, data ) );
+            /* Rendering */
+            immediate
+                ? _renderWithHtml.call( this, data )
+                : ( _URL in data && _renderWithUrl.call( this, data ) );
 
-        /* After rendered */
-        immediate && rendered.call( this, data );
-    };
+            /* After rendered */
+            immediate && rendered.call( this, data );
+        };
 
-    /**
-     * 设置当前 title.
-     *
-     * @param title
-     */
-    Fragment.prototype.setTitle = setTitle;
+        /**
+         * 设置当前 title.
+         *
+         * @param title
+         */
+        _.setTitle = setTitle;
 
-    /**
-     * 当前 fragment 是否可见.
-     *
-     * @returns {boolean}
-     */
-    Fragment.prototype.isVisible = function () {
-        return this[ _EL_ ][ _LAYOUT_ ]
-            && isShowing( this[ _EL_ ][ _LAYOUT_ ] )
-    };
+        /**
+         * 当前 fragment 是否可见.
+         *
+         * @returns {boolean}
+         */
+        _.isVisible = function () {
+            return this[ _EL_ ][ _LAYOUT_ ]
+                && isShowing( this[ _EL_ ][ _LAYOUT_ ] )
+        };
 
-    /**
-     * 获取参数对儿
-     *
-     * @returns {Map}
-     */
-    Fragment.prototype.getArgs = function () {
-        return this[ _ARGS ]
-    };
+        /**
+         * 获取参数对儿
+         *
+         * @returns {Map}
+         */
+        _.getArgs = function () {
+            return this[ _ARGS ]
+        };
 
-    /**
-     * 获取 fragment 的容器.
-     *
-     * @returns {DOM Element}
-     */
-    Fragment.prototype.getContainer = function () {
-        return getLayout.call( this )[ 0 ]
-    };
+        /**
+         * 获取 fragment 的容器.
+         *
+         * @returns {DOM Element}
+         */
+        _.getContainer = function () {
+            return getLayout.call( this )[ 0 ]
+        };
 
-    /**
-     * 返回一个标识, 标识是否没有内容被成功加载.
-     *
-     * @returns {boolean}
-     */
-    Fragment.prototype.hasContentLoaded = function () {
-        return this[ _FLAG_CONTENT_LOADED ]
-    };
+        /**
+         * 返回一个标识, 标识是否没有内容被成功加载.
+         *
+         * @returns {boolean}
+         */
+        _.hasContentLoaded = function () {
+            return this[ _FLAG_CONTENT_LOADED ]
+        };
 
-    /* Storage */
-    Fragment.prototype.put      = $lr.throwNiyError;
-    Fragment.prototype.get      = $lr.throwNiyError;
-    Fragment.prototype.has      = $lr.throwNiyError;
-    Fragment.prototype.remove   = $lr.throwNiyError;
-    Fragment.prototype.clear    = $lr.throwNiyError;
+        /* Storage */
+        _.put      = $lr.throwNiyError;
+        _.get      = $lr.throwNiyError;
+        _.has      = $lr.throwNiyError;
+        _.remove   = $lr.throwNiyError;
+        _.clear    = $lr.throwNiyError;
+
+    })(Fragment.prototype);
 
     /* ------------------------ Fragment class } ---------------------------- */
+
+    function _isNew(frag) {
+        return ! (_ID in frag);
+    }
 
     /**
      * 构建一个 fragment.
@@ -2466,7 +2480,7 @@
         var hasFragmentPresented = _hasFragment();
 
         /* TODO(XCL): 已经存在的是否允许更新 */
-        if ( _ID in frag )
+        if ( ! _isNew( frag ) )
             return frag;
 
         /* TODO: 这样会造成祖级元素无法被合理使用 */
