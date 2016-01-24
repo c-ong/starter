@@ -11,7 +11,7 @@
  *
  * @dependents Zepto
  */
-;!function(/*undefined*/) {
+;!function(undefined) {
     'use strict';
 
     /* FIXME(XCL): 考虑 App 注入场景 */
@@ -120,16 +120,16 @@
             dataType    = error;
             error       = success;
             success     = data;
-            data        = void 0;
+            data        = undefined;
         }
         if ( ! isFunction( success ) ) {
             dataType    = error;
             error       = dataType;
-            success     = void 0;
+            success     = undefined;
         }
         if ( ! isFunction( error ) ) {
             dataType    = error;
-            error       = void 0;
+            error       = undefined;
         }
 
         return {
@@ -143,7 +143,7 @@
 
     /* 我们 lairen 开放的 fn 及 property */
     $lr = {
-        undefined:      void 0,
+        undefined:      undefined,
         emptyFn:        emptyFn,
         win:            win,
 
@@ -191,10 +191,10 @@
 
     /**
      * The root of UIs
-     * @type {DomElement}
+     * @type {undefined}
      * @private
      */
-    $lr._viewport       = void 0;
+    $lr._viewport       = undefined;
 
     /* --------------------------------------------------------------------- */
 
@@ -376,7 +376,7 @@
  *                              Dialog module
  * ----------------------------------------------------------------------------
  */
-!function($lr/*, undefined*/) {
+!function($lr, undefined) {
     'use strict';
 
     var isArray     = $lr.isArray,
@@ -393,33 +393,31 @@
 
     /**
      * The root of dialog element
-     * @type {HTMLElement}
+     * @type {undefined}
      * @private
      */
-    var _dialog_root = void 0;
+    var _dialog_root = undefined;
 
     /**
      * The mask of dialog
-     * @type {HTMLElement}
+     * @type {undefined}
      * @private
      */
-    var _dialog_mask = void 0;
+    var _dialog_mask = undefined;
 
     /**
      * 当前 Dialog
-     *
-     * @type {Dialog}
+     * @type {undefined}
      * @private
      */
-    var _dialog_current = void 0;
+    var _dialog_current = undefined;
 
     /**
      * The wrapper of Dialog.
-     *
-     * @type {HTMLElement}
+     * @type {*|jQuery|HTMLElement}
      * @private
      */
-    var _DIALOG_WRAPPER_TEMPLATE = void 0;
+    var _DIALOG_WRAPPER_TEMPLATE = undefined;
 
     function _dialogIdx(stackId) {
         return 'lairen-layout--dialog_' + stackId
@@ -471,7 +469,7 @@
     function _build(html, cancelable, actions) {
         _ensureDialogBase();
 
-        isArray( cancelable ) && (actions = cancelable, cancelable = void 0);
+        isArray( cancelable ) && (actions = cancelable, cancelable = undefined);
 
         var model;
 
@@ -568,7 +566,7 @@
         try {
             return this
         } finally {
-            _dialog_current = void 0;
+            _dialog_current = undefined;
         }
     }
 
@@ -683,7 +681,7 @@
  *                              Fragment module
  * ----------------------------------------------------------------------------
  */
-!function($lr/*, undefined*/) {
+!function($lr, undefined) {
     'use strict';
 
     var win             = $lr.win,
@@ -832,7 +830,7 @@
     /**
      * fragments 的根节点.
      *
-     * @type {Fragment}
+     * @type {undefined}
      * @private
      */
     var _fragment_root;
@@ -1419,13 +1417,13 @@
         else if ( $lr.isUndefined(args) ) {
             animation   = fromUri;
             fromUri     = args;
-            args        = void 0;
+            args        = undefined;
         }
 
         /* id, args, animation */
         if ( isString( fromUri ) ) {
             animation = fromUri;
-            fromUri = void 0;
+            fromUri = undefined;
         }
 
         /*console.log( "_requestGo: %s, %s, %s, %s, multitask: %s", id, args, fromUri, animation, _isSupportMultiInstance( id ) );*/
@@ -1455,7 +1453,7 @@
     }
 
     function sort(args) {
-        var ordered = void 0;
+        var ordered = undefined;
         var keys    = Object.keys( args );
 
         if ( ! (0 in keys) ) {
@@ -2492,7 +2490,7 @@
 
         /* 分配一个 idx 实际上就是 z-index */
         var stackIdx = _alloZIndex( $lr.FRAGMENT ),
-            requires = void 0;
+            requires = undefined;
 
         /* 用于容纳 fragment 内容 */
         var layout   = _FRAGMENT_TEMPLATE.clone();
@@ -2610,7 +2608,7 @@
                 }
 
                 var trigger = {
-                    target: frag[ _ID ],
+                    target: id,
                     action: action };
 
                 /* 不设置 once 默认指只触发一次 */
@@ -3119,7 +3117,7 @@
             newRawHash      = _delayed_hash_change_event.newRawHash;
 
         /* 标记 delayed event 已处理 */
-        _delayed_hash_change_event = void 0;
+        _delayed_hash_change_event = undefined;
 
         _handleHashChange( oldFragSpec, newRawHash )
     };
@@ -3143,7 +3141,7 @@
          rewind && ( location.hash = _buildInnerHash( rewind ) );*/
     };
 
-    var _detect_backward_for_uri = void 0;
+    var _detect_backward_for_uri = undefined;
 
     var _roll_back;
 
@@ -3153,7 +3151,7 @@
      * @type {object}
      * @private
      */
-    var _delayed_hash_change_event = void 0;
+    var _delayed_hash_change_event = undefined;
 
     /**
      * 提取当前 fragment 的 FragSpec.
