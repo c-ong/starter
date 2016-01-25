@@ -714,13 +714,14 @@
 
     /**
      * 记录转化后的 hash 值, 及参数.
+     *
      * @type {string}
      * @private
      */
-    var _HASH       = 'hash',
+    var _ROUTE      = 'hash',
 
-        /* 配置项 */
-        _ARGS       = 'args',
+        /* Route 的参数 */
+        _ROUTE_ARGS = 'args',
 
         /* Fragment 的唯一标识 */
         _ID         = 'id',
@@ -1351,7 +1352,7 @@
      * @returns {string}
      * @private
      */
-    function _buildInnerHashByFragment(fragment) {
+    function _buildSpecialHashByFragment(fragment) {
         /*
         var x = [ _FRAGMENT_HASH_PREFIX, fragment[ _HASH ] ];
 
@@ -1365,27 +1366,27 @@
         */
 
         var fragSpec = {};
-        fragSpec[ _HASH ] = fragment[ _HASH ];
-        fragSpec[ _ARGS ] = fragment[ _ARGS ];
+        fragSpec[ _ROUTE ] = fragment[ _ROUTE ];
+        fragSpec[ _ROUTE_ARGS ] = fragment[ _ROUTE_ARGS ];
 
-        return _buildInnerHash( fragSpec )
+        return _buildSpecialHash( fragSpec )
     }
 
-    function _buildInnerHash(fragSpec) {
+    function _buildSpecialHash(fragSpec) {
         /* #!id:args */
-        var x = [ _FRAGMENT_HASH_PREFIX, fragSpec[ _HASH ] ];
+        var x = [ _FRAGMENT_HASH_PREFIX, fragSpec[ _ROUTE ] ];
 
-        fragSpec[ _ARGS ]
+        fragSpec[ _ROUTE_ARGS ]
         && (
             x.push( _ARG_DELIMITER ),
-            x.push( _argsUrlify( fragSpec[ _ARGS ] ) )
+            x.push( _argsUrlify( fragSpec[ _ROUTE_ARGS ] ) )
         );
 
         return x.join( '' )
     }
 
     function _syncHashToBrowser(fragment) {
-        location.hash = _buildInnerHashByFragment(fragment)
+        location.hash = _buildSpecialHashByFragment(fragment)
     }
 
     /* TODO(XCL): Renaming the fn name to forward */
@@ -1674,11 +1675,11 @@
      */
     var _config = {
         /* 默认的 Home id */
-        home:                               null,
+        home:                               void 0,
 
-        onFragmentChangeBefore:             null,
-        onFragmentChangeAfter:              null,
-        onCurrentlyFragmentContentLoaded:   null
+        onFragmentChangeBefore:             void 0,
+        onFragmentChangeAfter:              void 0,
+        onCurrentlyFragmentContentLoaded:   void 0
     };
 
     /**
@@ -1775,7 +1776,7 @@
         };
 
         /* 切换效果 */
-        var transit         = null,
+        var transit,
 
             /* 标识是否为后置结束事务 */
             postCommitTrans = 0;
@@ -1884,7 +1885,7 @@
         /* console.log( '## setupCurrentState ' + !! from_uri ); */
         var state   = _newState(),
             title   = target[ _TITLE ],
-            hash    = _buildInnerHashByFragment( target );
+            hash    = _buildSpecialHashByFragment( target );
 
         if ( from_uri )
             history.replaceState(state, title, hash);
@@ -1912,7 +1913,7 @@
         history.replaceState(
             state,
             initial[ _TITLE ],
-            _buildInnerHashByFragment( initial ) );
+            _buildSpecialHashByFragment( initial ) );
 
         _currentState = state/*history.state*/;
     }
@@ -2308,7 +2309,7 @@
             derive[ _STACK_INDEX_ ] ); */
 
         /* To retain the arguments if present. */
-        derive[ _ARGS ] = args;
+        derive[ _ROUTE_ARGS ] = args;
 
         /* 填充 HTML 片段，如果已指定该字段 */
         if ( _HTML in derive ) {
@@ -2341,7 +2342,7 @@
         _copyIfExist( source, clone, _TITLE );
 
         /* 解析后的 hash, lairen.ui.home -> lairen/ui/home */
-        _copyIfExist( source, clone, _HASH );
+        _copyIfExist( source, clone, _ROUTE );
 
         /* 是否支持多实例, 如支持多实例则祖先仅终不会被添加至 DOM 中 */
         _copyIfExist( source, clone, _MULTIPLE_INSTANCES );
@@ -2423,7 +2424,7 @@
          * @returns {Map}
          */
         _.getArgs = function () {
-            return this[ _ARGS ]
+            return this[ _ROUTE_ARGS ]
         };
 
         /**
@@ -2536,11 +2537,11 @@
         && (frag[ _TITLE ] = props[ _TITLE ]);
 
         /* 解析后的 hash, lairen.ui.home -> lairen/ui/home */
-        frag[ _HASH ]       = _makeIdUrlify( id );
+        frag[ _ROUTE ]      = _makeIdUrlify( id );
 
         /* To retain the arguments if present. */
-        _ARGS in props
-        && (frag[ _ARGS ] = props[ _ARGS ]);
+        _ROUTE_ARGS in props
+        && (frag[ _ROUTE_ARGS ] = props[ _ROUTE_ARGS ]);
 
         /* 是否支持多实例, 如支持多实例则祖先仅终不会被添加至 DOM 中 */
         isAncestor
@@ -2740,11 +2741,12 @@
 
     /**
      * 判断是否为 View hash.
+     *
      * @param hash
-     * @returns {*|boolean}
+     * @returns {boolean}
      * @private
      */
-    function _isFragmentHash/*_isRouterHash*/(hash) {
+    function _isFragmentHash/*_isRouterHash*/(/* RawHash */hash) {
         return _isSpecialRawHash( hash ) && ! _isMagicBackHash( hash )
     }
 
@@ -2792,19 +2794,19 @@
     function _overrideArgs(id, args) {
         /* TODO(XCL): 校验参数的合法性 */
         var x = getFragment( id );
-        x && (x[ _ARGS ] = args)
+        x && (x[ _ROUTE_ARGS ] = args)
     }
 
     /**
      * 分解 hash, 将从 URL 截取的 hash 片段分解为有效的 view id 及其参数.
      *
      * @param rawHash
-     * @returns {{hash: (Array.<T>|string|*|Blob|ArrayBuffer), args: *}}
+     * @returns {FragmenetSpec}
      * @private
      */
     var _resolveFragSpec = function(rawHash) {
         return {
-            hash: _extractHash( rawHash ),
+            hash: _extractRoute( rawHash ),
             args: _extractArgs( rawHash ) }
     };
 
@@ -2829,7 +2831,7 @@
      */
     function _extractArgs(rawHash) {
         if ( ! _hasArgs( rawHash ) )
-            return null;
+            return void 0;
 
         var result  = {},
 
@@ -2865,7 +2867,7 @@
             }
         }
 
-        return counter ? result : null
+        return counter ? result : void 0
     }
 
     /**
@@ -2908,11 +2910,12 @@
 
     /**
      * 提取 hash.
+     *
      * @param rawHash
-     * @returns {Array.<T>|string|*|Blob|ArrayBuffer}
+     * @returns {string}
      * @private
      */
-    function _extractHash(rawHash) {
+    function _extractRoute(rawHash) {
         return _hasArgs( rawHash )
             ? rawHash.slice( 2, rawHash.indexOf( _ARG_DELIMITER ) )
             : rawHash.slice( 2 )
@@ -2939,8 +2942,8 @@
      * @private
      */
     function _isSameFragmentSpec(l, r) {
-        return l && r && l[ _HASH ] === r[ _HASH ]
-            && _isSameArgs( l[ _ARGS ], r[ _ARGS ] )
+        return l && r && l[ _ROUTE ] === r[ _ROUTE ]
+            && _isSameArgs( l[ _ROUTE_ARGS ], r[ _ROUTE_ARGS ] )
     }
 
     /**
@@ -2953,10 +2956,10 @@
         if ( ! _ORIGIN_HASH )
             return;
 
-        var originHash = _ORIGIN_HASH[ _HASH ],
-            originArgs = _ORIGIN_HASH[ _ARGS ];
+        var originHash = _ORIGIN_HASH[ _ROUTE ],
+            originArgs = _ORIGIN_HASH[ _ROUTE_ARGS ];
 
-        originHash === fragment[ _HASH ]
+        originHash === fragment[ _ROUTE ]
         && (
             /* 更新 args */
             _overrideArgs( fragment[ _ID ], originArgs ),
@@ -3103,7 +3106,7 @@
      */
     var _ORIGIN_HASH = _isFragmentHash( location.hash )
         ? _resolveFragSpec( location.hash )
-        : null;
+        : void 0;
 
     var _onTransEnded = function() {
         _handleDelayedHashChangeEvent();
@@ -3168,8 +3171,8 @@
         var data;
 
         if ( _current ) {
-            (data = {})[_HASH]  = _current[_HASH];
-            data[_ARGS]         = _current[_ARGS];
+            (data = {})[_ROUTE]  = _current[_ROUTE];
+            data[_ROUTE_ARGS]         = _current[_ROUTE_ARGS];
         }
 
         return data;
@@ -3181,6 +3184,7 @@
      * @private
      */
     var _onHashChange = function(hashChangeEvent) {
+        /* TODO(XCL): Checking for URL changed event with interval fn */
         /*$lr.dev && console.log( "onHashChange::cs -> %s ls -> %s ",
          JSON.stringify( _currentState ),
          JSON.stringify( _detect_backward_for_uri ),
@@ -3189,7 +3193,7 @@
         /* 变更之前的 FragSpec */
         var oldFragSpec  = _getCurrentlyFragmentSpec(),
             /* 当前 Browser 中的 hash */
-            newRawHash    = location.hash;
+            newRawHash   = location.hash;
 
         /* TODO(XCL): Check for transaction timed out... */
         if ( _hasFragmentTransInProcessing() ) {
@@ -3269,9 +3273,9 @@
      * @private
      */
     var _triggerGoNext = function(/*FragSpec*/hash, fromUser, fromUri) {
-        var id = _makeIdentify( hash[ _HASH ] );
+        var id = _makeIdentify( hash[ _ROUTE ] );
 
-        _requestGo( id, hash[_ARGS], fromUri );
+        _requestGo( id, hash[_ROUTE_ARGS], fromUri );
 
         /*if ( _isSupportMultiInstance( id ) )
             _goNextWithMultiMode( id, hash[ _ARGS ], fromUser, fromUri );
@@ -3521,8 +3525,8 @@
          */
         bootstrap:  function(id, args) {
             _ORIGIN_HASH
-                && ( id = _makeIdentify( _ORIGIN_HASH[ _HASH ] ),
-                    args = _ORIGIN_HASH[ _ARGS ] );
+                && ( id = _makeIdentify( _ORIGIN_HASH[ _ROUTE ] ),
+                    args = _ORIGIN_HASH[ _ROUTE_ARGS ] );
             _requestGo( id, args, /* from_uri */0 )
         },
 
