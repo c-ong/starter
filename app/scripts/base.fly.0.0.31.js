@@ -2538,7 +2538,7 @@
         && (frag[ _TITLE ] = props[ _TITLE ]);
 
         /* 解析后的 hash, lairen.ui.home -> lairen/ui/home */
-        frag[ _ROUTE ]      = _makeIdUrlify( id );
+        frag[ _ROUTE ]      = _makeIdAsXpathRoute( id );
 
         /* To retain the arguments if present. */
         _ROUTE_ARGS in props
@@ -2770,7 +2770,7 @@
      * @returns {string}
      * @private
      */
-    function _makeIdUrlify(id) {
+    function _makeIdAsXpathRoute(id) {
         return /\.+/g.test( id ) ? ( id.replace( /\./g, '/' ) ) : id
     }
 
@@ -2781,7 +2781,7 @@
      * @returns {XML|string|void}
      * @private
      */
-    function _makeIdentify(hash) {
+    function _makeRouteIdentify(hash) {
         return /\/+/g.test( hash ) ? ( hash.replace( /\//g, '.' ) ) : hash
     }
 
@@ -3274,7 +3274,7 @@
      * @private
      */
     var _triggerGoNext = function(/*FragSpec*/hash, fromUser, fromUri) {
-        var id = _makeIdentify( hash[ _ROUTE ] );
+        var id = _makeRouteIdentify( hash[ _ROUTE ] );
 
         _requestGo( id, hash[_ROUTE_ARGS], fromUri );
 
@@ -3526,7 +3526,7 @@
          */
         bootstrap:  function(id, args) {
             _ORIGIN_HASH
-                && ( id = _makeIdentify( _ORIGIN_HASH[ _ROUTE ] ),
+                && ( id = _makeRouteIdentify( _ORIGIN_HASH[ _ROUTE ] ),
                     args = _ORIGIN_HASH[ _ROUTE_ARGS ] );
             _requestGo( id, args, /* from_uri */0 )
         },
