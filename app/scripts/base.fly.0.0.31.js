@@ -699,13 +699,14 @@
 
     /**
      * 以 #! 打头的 hash 可识别为我们的 fragment 导向.
+     *
      * @type {string}
      * @private
      */
-    var _FRAGMENT_HASH_PREFIX   = '#!',
+    var _FRAGMENT_HASH_STRIPPER = '#!',
 
         /* 这是一个特殊的 hash 它用于后退操作 */
-        _MAGIC_BACK_HASH        = _FRAGMENT_HASH_PREFIX + '-';
+        _MAGIC_BACK_HASH        = _FRAGMENT_HASH_STRIPPER + '-';
 
     /* Used for history API */
     var _STANDARD_BACK      = -1,
@@ -1374,11 +1375,11 @@
 
     function _buildSpecialHash(fragSpec) {
         /* #!id:args */
-        var x = [ _FRAGMENT_HASH_PREFIX, fragSpec[ _ROUTE ] ];
+        var x = [ _FRAGMENT_HASH_STRIPPER, fragSpec[ _ROUTE ] ];
 
         fragSpec[ _ROUTE_ARGS ]
         && (
-            x.push( _ARG_DELIMITER ),
+            x.push( _ARG_STRIPPER ),
             x.push( _argsUrlify( fragSpec[ _ROUTE_ARGS ] ) )
         );
 
@@ -2721,7 +2722,7 @@
      * @private
      */
     function _convertIdToHash(id) {
-        return _FRAGMENT_HASH_PREFIX + id
+        return _FRAGMENT_HASH_STRIPPER + id
     }
 
     function _convertHashToId(hash) {
@@ -2818,7 +2819,7 @@
      * @private
      */
     function _hasArgs(rawHash) {
-        return -1 ^ rawHash.indexOf( _ARG_DELIMITER )
+        return -1 ^ rawHash.indexOf( _ARG_STRIPPER )
     }
 
     var _ARG_VALUE_EMPTY = '';
@@ -2839,7 +2840,7 @@
             counter = 0,
 
             array   = rawHash
-                .substr( 1 + rawHash.indexOf( _ARG_DELIMITER ) )
+                .substr( 1 + rawHash.indexOf( _ARG_STRIPPER ) )
                 .split( '&' ),
 
             /* 索引, 参数对儿, 参数名, 参数, 数组 */
@@ -2906,7 +2907,7 @@
      * @type {string}
      * @private
      */
-    var _ARG_DELIMITER = ':';
+    var _ARG_STRIPPER = ':';
 
     /**
      * 提取 hash.
@@ -2917,7 +2918,7 @@
      */
     function _extractRoute(rawHash) {
         return _hasArgs( rawHash )
-            ? rawHash.slice( 2, rawHash.indexOf( _ARG_DELIMITER ) )
+            ? rawHash.slice( 2, rawHash.indexOf( _ARG_STRIPPER ) )
             : rawHash.slice( 2 )
     }
 
