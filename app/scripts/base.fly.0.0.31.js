@@ -19,7 +19,7 @@
         return;
 
     /* 版本号 */
-    var VERSION = '0.0.30';
+    var VERSION = '0.0.31';
 
     var $lr;
 
