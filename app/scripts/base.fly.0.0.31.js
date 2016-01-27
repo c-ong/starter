@@ -396,14 +396,14 @@
      * @type {HTMLElement}
      * @private
      */
-    var _dialog_root = void 0;
+    var _dialog_root;
 
     /**
      * The mask of dialog
      * @type {HTMLElement}
      * @private
      */
-    var _dialog_mask = void 0;
+    var _dialog_mask;
 
     /**
      * 当前 Dialog
@@ -411,7 +411,7 @@
      * @type {Dialog}
      * @private
      */
-    var _dialog_current = void 0;
+    var _dialog_current;
 
     /**
      * The wrapper of Dialog.
@@ -419,7 +419,7 @@
      * @type {HTMLElement}
      * @private
      */
-    var _DIALOG_WRAPPER_TEMPLATE = void 0;
+    var _DIALOG_WRAPPER_TEMPLATE;
 
     function _dialogIdx(stackId) {
         return 'lairen-layout--dialog_' + stackId
@@ -1099,7 +1099,7 @@
     /**
      * 获取 fragment 的容器.
      *
-     * @returns {DOM Element}
+     * @returns {HtmlElement}
      */
     function getContainer() {
         return getLayout.call( this )[ 0 ]
@@ -1238,12 +1238,12 @@
     }
 
     function _hasFragmentTransInProcessing() {
-        var ret = _in_transaction_;
-        if ( ret ) {
+        /*var ret = _in_transaction_;
+        if ( ret ) {*/
             /*alert('transaction: ' + ret);*/
-        }
+        /*}*/
         /*_dumpTrans('Lock');*/
-        return ret;
+        return _in_transaction_/*ret*/;
     }
 
     /**
@@ -1272,7 +1272,7 @@
      * 请求进行后退操作, 如果 BackStack 有可用的记录.
      */
     function back(fromUri/* allowUpToHome */) {
-        /*console.log("InProcessing %s, fromUri %s, backStack %s", _hasFragmentTransInProcessing(), fromUri, _hasBackStackRecords() );*/
+        console.log("InProcessing %s, fromUri %s, backStack %s", _hasFragmentTransInProcessing(), fromUri, _hasBackStackRecords() );
         /*if ( ! canBack() )*/
         if ( _hasFragmentTransInProcessing() )
             return;
@@ -1882,13 +1882,13 @@
         }
     }
 
-    function _setupCurrentState(target, from_uri) {
+    function _setupCurrentState(target, fromUri) {
         /* console.log( '## setupCurrentState ' + !! from_uri ); */
         var state   = _newState(),
             title   = target[ _TITLE ],
             hash    = _buildSpecialHashByFragment( target );
 
-        if ( from_uri )
+        if ( fromUri )
             history.replaceState(state, title, hash);
         else
             _pushState( state, title, hash );
@@ -2372,7 +2372,10 @@
      * @constructor
      */
     var Fragment = function() {
-        /* Empty constructor */
+        /* Constructor */
+
+        /* Attributes 容器 */
+        this.attributes = {};
     };
 
     (function (/* Fragment.prototype */_) {
@@ -2446,13 +2449,58 @@
             return this[ _FLAG_CONTENT_LOADED ]
         };
 
-        /* Storage */
-        _.put      = $lr.throwNiyError;
-        _.get      = $lr.throwNiyError;
-        _.has      = $lr.throwNiyError;
-        _.remove   = $lr.throwNiyError;
-        _.clear    = $lr.throwNiyError;
+        /**
+         * 放置 key-value 对儿.
+         *
+         * @param key
+         * @param value
+         * @returns {Fragment}
+         */
+        _.put      = function(key, value) {
+            if ( null != key )
+                this.attributes[key] = value;
+            return this;
+        };
 
+        /**
+         * 获取一个事先存入的 attr.
+         *
+         * @param attr
+         * @returns {*}
+         */
+        _.get      = function(attr) {
+            return this.attributes[attr];
+        };
+
+        /**
+         * 判断指定的 attr 是否存在.
+         *
+         * @param attr
+         * @returns {boolean}
+         */
+        _.has      = function(attr) {
+            return null != this.get(attr);
+        };
+
+        /**
+         * 移除指定的 attr.
+         *
+         * @param attr
+         * @returns {Fragment}
+         */
+        _.remove   = function(attr) {
+            if ( this.has( attr ) )
+                delete this.attributes[attr];
+
+            return this;
+        };
+
+        /**
+         * 清空全部的 attributes.
+         */
+        _.clear    = function() {
+            this.attributes = {};
+        };
     })(Fragment.prototype);
 
     /* ------------------------ Fragment class } ---------------------------- */
@@ -2827,12 +2875,12 @@
     /**
      * 从 hash 提取参数, 并以 key-value 形式返回.
      * @param rawHash
-     * @returns {*}
+     * @returns {Map} or null
      * @private
      */
     function _extractArgs(rawHash) {
         if ( ! _hasArgs( rawHash ) )
-            return void 0;
+            return null;
 
         var result  = {},
 
@@ -3063,7 +3111,7 @@
 
     /* 如果跳转到其它页面当后退至当前页面则可能 stack 丢失(RELOAD) */
     var _popStateHandler = function(event) {
-        /*$lr.dev && console.log( "history entries: %s", history.length );*/
+        console.log( "history entries: %s", history.length );
         /**
          * FIXME(XCL): 如果正在进行 trans 时触发 pop state 则说明是为了修正来自用户的
          *              快速 touch 操作来的 fragment 无跳转的问题, 此时仅仅是进行
@@ -3071,6 +3119,8 @@
          */
         /*if ( _isLocked() )
          return;*/
+
+        console.dir( event );
 
         if ( ! _checkStateEvent( event ) )
             return;
@@ -3107,7 +3157,7 @@
      */
     var _ORIGIN_HASH = _isFragmentHash( location.hash )
         ? _resolveFragSpec( location.hash )
-        : void 0;
+        : null;
 
     var _onTransEnded = function() {
         _handleDelayedHashChangeEvent();
@@ -3173,7 +3223,7 @@
 
         if ( _current ) {
             (data = {})[_ROUTE]  = _current[_ROUTE];
-            data[_ROUTE_ARGS]         = _current[_ROUTE_ARGS];
+            data[_ROUTE_ARGS]    = _current[_ROUTE_ARGS];
         }
 
         return data;
@@ -3184,7 +3234,7 @@
      *
      * @private
      */
-    var _onHashChange = function(hashChangeEvent) {
+    var _onHashChange = function(/* hashChangeEvent */) {
         /* TODO(XCL): Checking for URL changed event with interval fn */
         /*$lr.dev && console.log( "onHashChange::cs -> %s ls -> %s ",
          JSON.stringify( _currentState ),

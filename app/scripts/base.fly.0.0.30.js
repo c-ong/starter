@@ -1270,7 +1270,7 @@
      * 请求进行后退操作, 如果 BackStack 有可用的记录.
      */
     function back(fromUri/* allowUpToHome */) {
-        /*console.log("InProcessing %s, fromUri %s, backStack %s", _hasFragmentTransInProcessing(), fromUri, _hasBackStackRecords() );*/
+        console.log("InProcessing %s, fromUri %s, backStack %s", _hasFragmentTransInProcessing(), fromUri, _hasBackStackRecords() );
         /*if ( ! canBack() )*/
         if ( _hasFragmentTransInProcessing() )
             return;
@@ -1880,13 +1880,13 @@
         }
     }
 
-    function _setupCurrentState(target, from_uri) {
+    function _setupCurrentState(target, fromUri) {
         /* console.log( '## setupCurrentState ' + !! from_uri ); */
         var state   = _newState(),
             title   = target[ _TITLE ],
             hash    = _buildInnerHashByFragment( target );
 
-        if ( from_uri )
+        if ( fromUri )
             history.replaceState(state, title, hash);
         else
             _pushState( state, title, hash );
@@ -3059,7 +3059,7 @@
 
     /* 如果跳转到其它页面当后退至当前页面则可能 stack 丢失(RELOAD) */
     var _popStateHandler = function(event) {
-        /*$lr.dev && console.log( "history entries: %s", history.length );*/
+        console.log( "history entries: %s", history.length );
         /**
          * FIXME(XCL): 如果正在进行 trans 时触发 pop state 则说明是为了修正来自用户的
          *              快速 touch 操作来的 fragment 无跳转的问题, 此时仅仅是进行
@@ -3067,6 +3067,8 @@
          */
         /*if ( _isLocked() )
          return;*/
+
+        console.dir( event );
 
         if ( ! _checkStateEvent( event ) )
             return;
