@@ -1429,6 +1429,7 @@
      * @private
      */
     function _renderWithHtml(data) {
+        /* TODO(XCL): 如果 DOM 没有附载到 Document 则需要添加至其中... */
         /* To render using the html snippet */
         /*data && */this[ _EL_ ][ _LAYOUT_ ].html( data[ _HTML ] );
 
@@ -1484,7 +1485,8 @@
         */
 
         var fragSpec = {};
-        fragSpec[ _ROUTE ] = fragment[ _ROUTE ];
+
+        fragSpec[ _ROUTE ]      = fragment[ _ROUTE ];
         fragSpec[ _ROUTE_ARGS ] = fragment[ _ROUTE_ARGS ];
 
         return _buildSpecialHash( fragSpec )
@@ -1495,10 +1497,10 @@
         var x = [ _FRAGMENT_HASH_STRIPPER, fragSpec[ _ROUTE ] ];
 
         fragSpec[ _ROUTE_ARGS ]
-        && (
-            x.push( _ARG_STRIPPER ),
-            x.push( _argsUrlify( fragSpec[ _ROUTE_ARGS ] ) )
-        );
+            && (
+                x.push( _ARG_STRIPPER ),
+                x.push( _argsUrlify( fragSpec[ _ROUTE_ARGS ] ) )
+            );
 
         return x.join( '' )
     }
@@ -1512,7 +1514,7 @@
      * 进行 fragment 切换操作.
      *
      * @param id {string} 指定 fragment 的 id
-     * @param args {object} 参数(optional)
+     * @param args {Map} 参数(optional)
      * @param fromUri {boolean} 是否从 uri 触发(optional)
      * @param animation {string} 切换效果(optional)
      * @private
@@ -1531,24 +1533,24 @@
 
         /* id, args, ?, ? */
         if ( isPlainObject( args ) ) {
-            _overrideArgs(id, args);
+            _overrideArgs( id, args );
         }
         /* id, animation */
         else if ( isString( args ) ) {
-            animation = fromUri;
-            /* fromUri = args = undefined; */
+            animation   = args;
+            fromUri     = args = void 0;
         }
-        /* id, fromUri, ? */
-        else if ( $lr.isUndefined(args) ) {
-            animation   = fromUri;
+        /* id, ?, ? */
+        else if ( $lr.isUndefined( args ) ) {
+            /*animation   = fromUri;
             fromUri     = args;
-            args        = void 0;
+            args        = void 0;*/
         }
 
         /* id, args, animation */
         if ( isString( fromUri ) ) {
-            animation = fromUri;
-            fromUri = void 0;
+            animation   = fromUri;
+            fromUri     = void 0;
         }
 
         /*console.log( "_requestGo: %s, %s, %s, %s, multitask: %s", id, args, fromUri, animation, _isSupportMultiInstance( id ) );*/
@@ -1867,6 +1869,7 @@
      *
      * @param fromUri 默认是通过 $Fragment.go 来调用.
      * @param animation
+     * @param reverse 标识是否执行反向的切换效果, 如果下一个即将呈现的 fragment 支持 animation
      * @private
      */
     function _performGo(fromUri, animation, reverse) {
@@ -2015,6 +2018,7 @@
 
     function _setupInitialState(/* fragment */initial, from_uri) {
         var state = {};
+
             state[_IDX] = _FIRST_STATE;
 
         /**
@@ -2555,7 +2559,7 @@
         /**
          * 获取 fragment 的容器.
          *
-         * @returns {DOM Element}
+         * @returns {HtmlElement}
          */
         _.getContainer = function () {
             return getLayout.call( this )[ 0 ]
@@ -2676,8 +2680,8 @@
 
         /* 处理依赖项 */
         isPlainObject( props )
-        && _REQUIRES in props
-        && ( requires = _resolveRequires( props.requires ) );
+            && _REQUIRES in props
+                && ( requires = _resolveRequires( props.requires ) );
 
         /* ----------------------------------------------------------------- */
 
@@ -2704,22 +2708,22 @@
 
         /* 标题 */
         isString( props[ _TITLE ] )
-        && (frag[ _TITLE ] = props[ _TITLE ]);
+            && (frag[ _TITLE ] = props[ _TITLE ]);
 
         /* 解析后的 hash, lairen.ui.home -> lairen/ui/home */
         frag[ _ROUTE ]      = _makeIdAsXpathRoute( id );
 
         /* To retain the arguments if present. */
         _ROUTE_ARGS in props
-        && (frag[ _ROUTE_ARGS ] = props[ _ROUTE_ARGS ]);
+            && (frag[ _ROUTE_ARGS ] = props[ _ROUTE_ARGS ]);
 
         /* 是否支持多实例, 如支持多实例则祖先仅终不会被添加至 DOM 中 */
         isAncestor
-        && Object.defineProperty(
-            frag,
-            _MULTIPLE_INSTANCES,
-            { value: 1, writable: 0 }
-        );
+            && Object.defineProperty(
+                frag,
+                _MULTIPLE_INSTANCES,
+                { value: 1, writable: 0 }
+            );
 
         /* 解析切换效果配置 */
         _settleAnimation( frag, props );
@@ -2764,20 +2768,20 @@
     }
 
     function _registerTriggersIfNecessary(frag, props) {
-        var triggerDefine = props['trigger'];
+        var triggerDirective = props['trigger'];
 
-        if ( triggerDefine ) {
-            var on      = triggerDefine['on'],
-                state   = triggerDefine['state'],
-                action  = triggerDefine['action'];
+        if ( triggerDirective ) {
+            /* TODO(XCL): show:observable */
+            var on      = triggerDirective['on'],
+                state   = triggerDirective['state'],
+                action  = triggerDirective['action'];
 
             if ( on && state && action ) {
                 var host    = _triggers[on];
 
                 /* 首次开劈空间(trigger 被触发完了以后应该释放空间) */
-                if ( ! host ) {
+                if ( ! host )
                     _triggers[on] = host = {};
-                }
 
                 var stack = host[state];
 
@@ -2790,7 +2794,9 @@
                     action: action };
 
                 /* 不设置 once 默认指只触发一次 */
-                'once' in triggerDefine && triggerDefine.once && (trigger['once'] = 1);
+                'once' in triggerDirective
+                    && triggerDirective.once
+                        && (trigger['once'] = 1);/* listen once */
 
                 stack.push( trigger );
             }
@@ -2821,6 +2827,7 @@
             result = origin.slice( 0 );
 
             var idx;
+
             /* 移除只触发一次的 trigger */
             for ( idx in origin ) {
                 trigger = origin[idx];
@@ -2973,7 +2980,7 @@
      * 分解 hash, 将从 URL 截取的 hash 片段分解为有效的 view id 及其参数.
      *
      * @param rawHash
-     * @returns {FragmenetSpec}
+     * @returns {FragmentSpec}
      * @private
      */
     var _resolveFragSpec = function(rawHash) {
@@ -3293,8 +3300,8 @@
         if ( ! _delayed_hash_change_event )
             return;
 
-        var oldFragSpec    = _delayed_hash_change_event.oldFragSpec,
-            newRawHash      = _delayed_hash_change_event.newRawHash;
+        var oldFragSpec = _delayed_hash_change_event.oldFragSpec,
+            newRawHash  = _delayed_hash_change_event.newRawHash;
 
         /* 标记 delayed event 已处理 */
         _delayed_hash_change_event = void 0;
@@ -3439,7 +3446,7 @@
     /**
      * 前往指定的 fragment.
      *
-     * @param hash {FragSpec}
+     * @param hash {FragmentSpec}
      * @param fromUser {boolean} 是否来自用户的形为
      * @param fromUri {boolean}
      * @private
@@ -3493,6 +3500,7 @@
      * @param args (optional)
      * @param fromUser (optional)
      * @param fromUri (optional)
+     * @param animation (optional)
      * @private
      */
     function _goNext(id, args, fromUser, fromUri, animation) {
