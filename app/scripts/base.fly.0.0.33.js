@@ -841,8 +841,11 @@
         _HTML       = 'html',
         _URL        = 'url',
 
-        /* 指定的切换效果 */
+        /* Fragment 指定的切换效果 */
         _ANIMATION  = 'animation',
+        /* 临时覆盖的切换效果 */
+        _OVERRIDDEN_ANIMATION   = '_force_anima',
+        _BACK_STACK_TARGET_ID   = '_',
 
         /* 依赖项 */
         _REQUIRES   = 'requires';
@@ -1731,6 +1734,13 @@
         return key.join( '' )
     }
 
+    /**
+     * 分解 fx, 如果正确则返回, 反则返回默认值.
+     *
+     * @param fx
+     * @returns {string}
+     * @private
+     */
     function _resolveFx(fx) {
         return fx && fx in win.fx ? fx : win.fx.slide
     }
@@ -1916,10 +1926,13 @@
             /* 不启用动画, hidden 后也就无需 endTrans */
             postCommitTrans = 0;
         } else {
-            if ( animation )
+            if ( animation ) {
                 animation = _resolveFx( animation );
-            else
-                animation = _getAnimation( next );
+                /* XXX(XCL): Remember the animation of overridden */
+                /*next[ _OVERRIDDEN_ANIMATION ] = animation;*/
+            } else {
+                animation = _getAnimation(next);
+            }
 
             transit = _buildTransition( animation,
                 reverse
@@ -1959,10 +1972,10 @@
 
             /* 隐藏当前 fragment */
             current
-            && (
-                pause( current ),
-                _hide( current /*, _FROM_STACK_YES,  endTransNeeded */, transit,
-                    fireFragmentChangeAfterEvent )
+                && (
+                    pause( current ),
+                    _hide( current /*, _FROM_STACK_YES,  endTransNeeded */, transit,
+                        fireFragmentChangeAfterEvent )
                 );
         /*} finally {*/
             /* FIXME(XCL): 不管是否被暂停这里绝对执行恢复操作 */
@@ -1973,7 +1986,7 @@
 
             /* 加入 BackStack */
             if ( current && ! first ) {
-                _addToBackStack( current );
+                _addToBackStack( current, animation );
 
                 historyApiSupported && _setupCurrentState( next, fromUri )
             } else {
@@ -2009,7 +2022,7 @@
             hash    = _buildSpecialHashByFragment( target );
 
         if ( fromUri )
-            history.replaceState(state, title, hash);
+            history.replaceState( state, title, hash );
         else
             _pushState( state, title, hash );
 
@@ -2019,7 +2032,7 @@
     function _setupInitialState(/* fragment */initial, from_uri) {
         var state = {};
 
-            state[_IDX] = _FIRST_STATE;
+            state[ _IDX ] = _FIRST_STATE;
 
         /**
          * Chrome 45 (Version 45.0.2454.85 m) started throwing an error,
@@ -2041,26 +2054,44 @@
     }
 
     /**
-     * 获取 fragment 定义的切换效果, 如果没定义则返回默认效果.
+     * 获取用于 fragment 的切换效果, 优先取 Overridden 之后的 animation, 如果没有则取其
+     * 自身定义的, 再者取返回默认值.
      *
      * @param fragment
      * @returns {string}
      * @private
      */
     function _getAnimation(fragment) {
-        if ( ! (_ANIMATION in fragment) )
+        /*var fx;
+
+        if ( _OVERRIDDEN_ANIMATION in fragment ) {
+            fx = fragment[ _OVERRIDDEN_ANIMATION ];
+            delete fragment[ _OVERRIDDEN_ANIMATION ];
+        }*/
+
+        if ( /*fx || */! (_ANIMATION in fragment) )
             return fx.slide;
 
         return fragment[ _ANIMATION ];
     }
 
-    function _performBack() {
+    /**
+     * 执行后退操作.
+     *
+     * @param animation (string)
+     * @private
+     */
+    function _performBack(animation) {
         if ( ! canBack() )
             return;
 
         /* 当前 fragment, 也旨即将隐藏的 */
         var current = _current,
-            next    = _popBackStack();
+            next;
+
+        /* Back stack record */
+        var bsr = _popBackStack();
+        next = getFragment( bsr[ _BACK_STACK_TARGET_ID ] );
 
         /* Dispatching the fragment change before event */
         _onFragmentChangeBefore( current, next );
@@ -2071,7 +2102,10 @@
 
         /* rear: fragment-exit, front: fragment-pop-enter */
         /* 切换效果 */
-        var transit = _buildTransition( _getAnimation( current ), _BACKWARD ),
+        animation = _OVERRIDDEN_ANIMATION in bsr
+            ? bsr[ _OVERRIDDEN_ANIMATION ]
+            : _getAnimation( current );
+        var transit = _buildTransition( animation, _BACKWARD ),
             /* 标识是否为后置结束事务 */
             postCommitTrans = !! transit.rear;
 
@@ -2294,11 +2328,12 @@
     /**
      * 将 fragment 添加至 BackStack, 并返回 stack 的数量.
      * @param fragment
-     * @returns {*}
+     * @param animation
+     * @returns {BackStackRecord}
      * @private
      */
-    function _addToBackStack(fragment) {
-        return _push( fragment )
+    function _addToBackStack(fragment, animation) {
+        return _push( fragment, animation )
     }
 
     function _pushState(state, title, hash) {
@@ -2332,15 +2367,24 @@
      * 取出上一个暂停的 fragment.
      *
      * @returns {fragment}
-     * @private
+     * @private BackStackRecord
      */
     function _popBackStack() {
-        var id = _pop();
-        return id ? getFragment( id ) : null
+        return _pop();
+        /*var id = _pop();
+        return id ? getFragment( id ) : null*/
     }
 
-    function _push(fragment) {
-        return _backStack.push( _getId( fragment ) );
+    function _push(fragment, animation) {
+        var bsr = {};
+
+        bsr[ _BACK_STACK_TARGET_ID ] = _getId( fragment );
+
+        /* XXX(XCL): Remember the animation of overridden */
+        animation && (bsr[ _OVERRIDDEN_ANIMATION ] = animation);
+
+        return _backStack[ _backStack.length ] = bsr;
+        /*return _backStack.push( _getId( fragment ) );*/
         /*return _backStack.push( fragment[ _ID ] )*/
     }
 
@@ -3209,7 +3253,7 @@
     var _currentState   = {};
     _currentState[ _IDX ] = _FIRST_STATE;
 
-    function _newState() {
+    function _newState(animation) {
         var state = {};
 
         state[ _IDX ] = _backStack.length - 1;
@@ -3225,9 +3269,8 @@
     }
 
     function _handleBackward(event) {
-        var idx = event.state[ _IDX ];
-
-        idx in _backStack && _performBack();
+        var state = event.state;
+        state[ _IDX ] in _backStack && _performBack();
     }
 
     /* XXX(XCL): 是否应该支持 forward 操作 */
