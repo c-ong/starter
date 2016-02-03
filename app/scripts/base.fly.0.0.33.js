@@ -12,7 +12,7 @@
  * <pre>
  * e.g:
  *
- * 定义一个 fragment:
+ * 1: 定义一个 fragment:
  *
  * $Fragment.define(
  *      'namespace.views.about',      // fragment 唯一标识，必选项
@@ -104,6 +104,28 @@
  *  3: getArgs      获取参数对儿
  *  4: render       渲染 UI 依照给定的参数类型
  *  5: getContainer 获取 fragment 的容器
+ *
+ * 2: 对 $Fragment 进行全局配置, 例如指定: listener, property 等;
+ *
+ * $Fragment.config( {
+ *      // 会在 fragment 切换之前调用, 其中 currently 指当前的 fragment,
+ *      // upcoming 指即将呈现的 fragment.
+ *      onFragmentChangeBefore: function(currently, upcoming) {},
+ *
+ *      // 会在 fragment 切换完成之后调用(既切换效果呈现完毕之后), older 切换之前
+ *      // 的 fragment, currently 指切换之后的 fragment.
+ *      onFragmentChangeAfter: function(older, currently) {},
+ *
+ *      // 会在当前 fragment 内容加载完成之后调用
+ *      onCurrentlyFragmentContentLoaded: function() {}
+ *  } );
+ *
+ *  3: Fragment 的导向
+ *
+ *  1): go 用于前往指定的 fragment, 该 fn 接受3个参数 (id, args, animation) 其 id 为
+ *      必选, args 为传递的参数, animation 则为强制使用的 animation;
+ *
+ *  2): back 请求后退操作;
  * </pre>
  */
 
@@ -120,7 +142,7 @@
         return;
 
     /* 版本号 */
-    var VERSION = '0.0.32';
+    var VERSION = '0.0.33';
 
     var $lr;
 
@@ -3611,20 +3633,6 @@
 
         /**
          * 对 $Fragment 进行全局配置, 例如指定: listener, property 等
-         * <pre>
-         * $Fragment.config( {
-         *      // 会在 fragment 切换之前调用, 其中 currently 指当前的 fragment,
-         *      // upcoming 指即将呈现的 fragment.
-         *      onFragmentChangeBefore: function(currently, upcoming) {},
-         *
-         *      // 会在 fragment 切换完成之后调用(既切换效果呈现完毕之后), older 切换之前
-         *      // 的 fragment, currently 指切换之后的 fragment.
-         *      onFragmentChangeAfter: function(older, currently) {},
-         *
-         *      // 会在当前 fragment 内容加载完成之后调用
-         *      onCurrentlyFragmentContentLoaded: function() {}
-         *  } );
-         * </pre>
          */
         config:     config,
 
