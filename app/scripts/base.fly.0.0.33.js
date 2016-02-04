@@ -688,11 +688,6 @@
                 /* el.wrapper.css( { opacity: 1 } );
                 el.wrapper.hide() */
             } );
-        /*try {
-            return this
-        } finally {
-            _dialog_current = void 0;
-        }*/
 
         _dialog_current = void 0;
 
@@ -755,12 +750,6 @@
         /* Vertical Center */
         var margin = (_dialog_root.height() / 2) - (el.wrapper.height() / 2);
         el.wrapper.css( 'margin-top', margin + 'px' );
-
-        /*try {
-            return this
-        } finally {
-            _dialog_current = this;
-        }*/
 
         return _dialog_current = this
     }
@@ -1326,18 +1315,7 @@
         /* 呈现下一个 fragment */
         _show( next, /*_TRANSITION_SLIDE, */_FROM_STACK_NO );
 
-        /*try {*/
-            /* 销毁 current */
-            /*current && _scheduleDestroy( current );*/
-        /*} finally {
-            _current = next;*/
-
-            /* 更新至 location.hash */
-            /*_applyHash( _current );
-
-            ALWAYS_POST_COMMIT_ON_BACK || _endTrans();
-        }*/
-
+        /* 销毁 current */
         current && _scheduleDestroy( current );
 
         _current = next;
@@ -1837,7 +1815,7 @@
     /**
      * 为 $Fragment 配置全局的 listener 及属性.
      *
-     * @param newly
+     * @param {Map} newly
      */
     function config(newly) {
         if ( ! newly )
@@ -1860,8 +1838,8 @@
     /**
      * fragment 切换之前.
      *
-     * @param currently
-     * @param upcoming
+     * @param {Fragment} currently
+     * @param {Fragment} upcoming
      * @private
      */
     function _onFragmentChangeBefore(currently, upcoming) {
@@ -1871,8 +1849,8 @@
     /**
      * fragment 切换之后.
      *
-     * @param older
-     * @param currently
+     * @param {Fragment} older
+     * @param {Fragment} currently
      * @private
      */
     function _onFragmentChangeAfter(older, currently) {
@@ -1900,7 +1878,7 @@
      * 执行 Go 操作.
      *
      * @param fromUri 默认是通过 $Fragment.go 来调用.
-     * @param animation
+     * @param {string} animation
      * @param reverse 标识是否执行反向的切换效果, 如果下一个即将呈现的 fragment 支持 animation
      * @private
      */
@@ -1989,52 +1967,49 @@
                 start       ( next )
             );
 
-        /*try {*/
-            /* onVisibilityChanged */
+        /* onVisibilityChanged */
 
-            /* 隐藏当前 fragment */
-            current
-                && (
-                    pause( current ),
-                    _hide( current /*, _FROM_STACK_YES,  endTransNeeded */, transit,
-                        fireFragmentChangeAfterEvent )
-                );
-        /*} finally {*/
-            /* FIXME(XCL): 不管是否被暂停这里绝对执行恢复操作 */
-            resume( next );
+        /* 隐藏当前 fragment */
+        current
+            && (
+                pause( current ),
+                _hide( current /*, _FROM_STACK_YES,  endTransNeeded */, transit,
+                    fireFragmentChangeAfterEvent )
+            );
+        /* FIXME(XCL): 不管是否被暂停这里绝对执行恢复操作 */
+        resume( next );
 
-            /* 呈现下一个 fragment */
-            _show( next, transit/*, _FROM_STACK_NO*/ );
+        /* 呈现下一个 fragment */
+        _show( next, transit/*, _FROM_STACK_NO*/ );
 
-            /* 加入 BackStack */
-            if ( current && ! first ) {
-                _addToBackStack( current, animation );
+        /* 加入 BackStack */
+        if ( current && ! first ) {
+            _addToBackStack( current, animation );
 
-                historyApiSupported && _setupCurrentState( next, fromUri )
-            } else {
-                historyApiSupported && _setupInitialState( next, fromUri )
-            }
+            historyApiSupported && _setupCurrentState( next, fromUri )
+        } else {
+            historyApiSupported && _setupInitialState( next, fromUri )
+        }
 
-            _current = next;
+        _current = next;
 
-            if ( ! historyApiSupported ) {
-                /* 更新至 location.hash(此后 hash 将被变更) */
-                _applyHash( _current );
-            }
+        if ( ! historyApiSupported ) {
+            /* 更新至 location.hash(此后 hash 将被变更) */
+            _applyHash( _current );
+        }
 
-            /*
-             * 如果 trans 为后置提交, 那么这里将不在处理, 注意 Rear 与 Front 效果呈现时序
-             * 有可能不一致.
-             */
-            if ( ! postCommitTrans ) {
-                /* 标识 trans 完成 */
-                _endTrans();
+        /*
+         * 如果 trans 为后置提交, 那么这里将不在处理, 注意 Rear 与 Front 效果呈现时序
+         * 有可能不一致.
+         */
+        if ( ! postCommitTrans ) {
+            /* 标识 trans 完成 */
+            _endTrans();
 
-                /* 触发 onFragmentChangeAfter 事件 */
-                fireFragmentChangeAfterEvent();
-            }
-            /*postCommitTrans || _endTrans();*/
-        /*}*/
+            /* 触发 onFragmentChangeAfter 事件 */
+            fireFragmentChangeAfterEvent();
+        }
+        /*postCommitTrans || _endTrans();*/
     }
 
     function _setupCurrentState(target, fromUri) {
@@ -2142,26 +2117,24 @@
         _hide( current, transit/*_FROM_STACK_NO,*/ /*endTransNeeded*//*1*/,
             fireFragmentChangeAfterEvent );
 
-        /*try {*/
-            /* 恢复 */
-            resume( next );
+        /* 恢复 */
+        resume( next );
 
-            /* 呈现下一个 fragment */
-            _show( next, transit/*_TRANSITION_SLIDE, _FROM_STACK_YES*/ );
-        /*} finally {*/
-            _current = next;
+        /* 呈现下一个 fragment */
+        _show( next, transit/*_TRANSITION_SLIDE, _FROM_STACK_YES*/ );
 
-            /* 支持 history 则不需要手动更新 hash */
-            if ( ! historyApiSupported ) {
-                _applyHash( _current )
-            }
+        _current = next;
 
-            if ( ! postCommitTrans ) {
-                _endTrans();
-                fireFragmentChangeAfterEvent();
-            }
-            /*postCommitTrans*/ /*ALWAYS_POST_COMMIT_ON_BACK*/ /*|| _endTrans();*/
-        /*}*/
+        /* 支持 history 则不需要手动更新 hash */
+        if ( ! historyApiSupported ) {
+            _applyHash( _current )
+        }
+
+        if ( ! postCommitTrans ) {
+            _endTrans();
+            fireFragmentChangeAfterEvent();
+        }
+        /*postCommitTrans*/ /*ALWAYS_POST_COMMIT_ON_BACK*/ /*|| _endTrans();*/
     }
 
     /* TODO: */
@@ -2508,13 +2481,7 @@
             /* _renderWithUrl.call( derive, { url: derive[ _URL ] } ); */
         }
 
-        /*try {*/
-            /*return derive*/
-        /*} finally {*/
-            /* 将 clone 的 fragment 放入容器 */
-            /*_add( derive );*/
-        /*}*/
-
+        /* 将 clone 的 fragment 放入容器 */
         _add( derive );
 
         return derive
@@ -2818,17 +2785,13 @@
 
         /* ----------------------------------------------------------------- */
 
-        /*try {
-            return frag
-        } finally {*/
-            /* 将定义的 fragment 放入容器 */
-            _add( frag );
+        /* 将定义的 fragment 放入容器 */
+        _add( frag );
 
-            /* 呈现默认 View 如果没有有效的 view id 被指定 */
-            /* FIXME(XCL): 暂时从 bootstrap 调用, 以在 register 过程中调用一些未加载的
-                           fragment */
-            /*! hasFragmentPresented && _setupTopIfMatch( frag )*/
-        /*}*/
+        /* 呈现默认 View 如果没有有效的 view id 被指定 */
+        /* FIXME(XCL): 暂时从 bootstrap 调用, 以在 register 过程中调用一些未加载的
+                       fragment */
+        /*! hasFragmentPresented && _setupTopIfMatch( frag )*/
 
         return frag
     }
