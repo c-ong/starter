@@ -1102,7 +1102,10 @@
 
     /* --------------------------------------------------------------------- */
 
-    function _triggerReload(fragment) {
+    function _triggerReload(fragment, args) {
+        if ( isPlainObject( args ) )
+            _overrideArgs( _getId( fragment ), args );
+
         _invokeHandlerWithShareMode( fragment, _ON_RELOAD )
     }
 
@@ -1569,10 +1572,11 @@
     /**
      * TODO(XCL): 暂时未实现多实例 reload.
      * @param id
+     * @params args
      * @private
      */
-    function _reload(id) {
-        _exist( id ) && _triggerReload( getFragment( id ) )
+    function _reload(id, args) {
+        _exist( id ) && _triggerReload( getFragment( id ), args )
     }
 
     /* --------------------------------------------------------------------- */
@@ -2130,15 +2134,24 @@
         _current = next;
 
         /* 支持 history 则不需要手动更新 hash */
-        if ( ! historyApiSupported ) {
-            _applyHash( _current )
-        }
+        if ( ! historyApiSupported )
+            _applyHash( _current );
 
         if ( ! postCommitTrans ) {
             _endTrans();
+
             fireFragmentChangeAfterEvent();
         }
         /*postCommitTrans*/ /*ALWAYS_POST_COMMIT_ON_BACK*/ /*|| _endTrans();*/
+
+        /* TODO(XCL): 对于非 multitask 的后退操作, 如果在后退之前 args 被更新则需要同步 hash */
+        if ( ! _isDerive( next ) ) {
+            var currentlyArgs = _extractArgs( location.hash );
+
+            if ( ! _isSameArgs( next[ _ROUTE_ARGS ], currentlyArgs ) ) {
+                _applyHash( _current );
+            }
+        }
     }
 
     /* TODO: */
