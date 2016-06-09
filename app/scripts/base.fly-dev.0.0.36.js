@@ -134,19 +134,16 @@
  *
  * @dependents Zepto
  */
-;!function(/*undefined*/) {
+;!function(lairen) {
     'use strict';
 
-    /* FIXME(XCL): 考虑 App 注入场景 */
-    if ( window[ 'lairen' ] )
-        return;
-
     /* 版本号 */
-    var VERSION = '0.0.33';
+    var VERSION = '0.0.36';
 
-    var $lr;
+    var _       = lairen || {};
 
     var win     = window;
+    var doc     = win.document;
 
     var emptyFn = function() {};
 
@@ -155,10 +152,10 @@
         browser = {},
 
         /* 这取自于 zepto 以后可能完全使用 zepto.detect */
-        android = ua.match(/(Android);?[\s\/]+([\d.]+)?/),
-        ipad    = ua.match(/(iPad).*OS\s([\d_]+)/),
-        ipod    = ua.match(/(iPod)(.*OS\s([\d_]+))?/),
-        iphone  = ! ipad && ua.match(/(iPhone\sOS)\s([\d_]+)/),
+        android = ua.match(/(Android);?[\s\/]+([\d.]+)?/ig),
+        ipad    = ua.match(/(iPad).*OS\s([\d_]+)/ig),
+        ipod    = ua.match(/(iPod)(.*OS\s([\d_]+))?/ig),
+        iphone  = ! ipad && ua.match(/(iPhone\sOS)\s([\d_]+)/ig),
 
         /* 是否为微信环境 */
         wechat  = ua.match( /MicroMessenger\/([\d.]+)/ig ),
@@ -174,15 +171,15 @@
 
     if ( iphone && ! ipod ) {
         os.ios = os.iphone = ! 0;
-        os.version = iphone[2].replace(/_/g, '.');
+        iphone[2] && (os.version = iphone[2].replace(/_/g, '.'));
     }
     if ( ipad ) {
         os.ios = os.ipad = ! 0;
-        os.version = ipad[2].replace(/_/g, '.');
+        ipad[2] && (os.version = ipad[2].replace(/_/g, '.'));
     }
     if ( ipod ) {
         os.ios = os.ipod = ! 0;
-        os.version = ipod[3] ? ipod[3].replace(/_/g, '.') : null;
+        ipod[3] && (os.version = ipod[3] ? ipod[3].replace(/_/g, '.') : null);
     }
     'ios' in os || (os.ios = ! 1);
 
@@ -264,81 +261,83 @@
         }
     }
 
+    /* Super global */
+    var $global = {};
+
     /* 我们 lairen 开放的 fn 及 property */
-    $lr = {
-        undefined:      void 0,
-        emptyFn:        emptyFn,
-        win:            win,
+    _.undefined = void 0;
+    _.emptyFn   = emptyFn;
+    _.noop      = emptyFn;
+    _.win       = win;
 
-        /* 是否为开发模式(待移除) */
-        dev:            0,
+    /* 是否为开发模式(待移除) */
+    _.dev       = 0;
 
-        /* 用于判断类型的函数 */
-        isUndefined:    isUndefined,
-        isString:       isString,
-        isArray:        isArray,
-        isFunction:     isFunction,
-        isNumber:       isNumber,
-        isDom:          isDom,
+    /* 用于判断类型的函数 */
+    _.isUndefined = isUndefined;
+    _.isString  =   isString;
+    _.isArray   =   isArray;
+    _.isFunction =  isFunction;
+    _.isNumber  =   isNumber;
+    _.isDom     =   isDom;
 
-        /* 低版本可能没有提供 JSON.stringify */
-        stringify:      stringify,
+    /* 低版本可能没有提供 JSON.stringify */
+    _.stringify =   stringify;
 
-        throwNiyError:  throwNiyError,
+    _.throwNiyError = throwNiyError;
 
-        /* HTTP 请求 */
-        get:            get,
-        post:           post,
+    /* HTTP 请求 */
+    _.get       =   get;
+    _.post      =   post;
 
-        /* Runtime Env */
-        os:             os,
-        browser:        browser,
+    /* Runtime Env */
+    _.os        =   os;
+    _.browser   =   browser;
 
-        /* Animation timing(Default) */
-        cubic_bezier:   'cubic-bezier(.4, 0, .2, 1)',
-        brisk_cubic_bezier:   'cubic-bezier(.1,.5,.1,1)'
+    /* Animation timing(Default) */
+    _.cubic_bezier          = 'cubic-bezier(.4, 0, .2, 1)';
+    _.brisk_cubic_bezier    = 'cubic-bezier(.1,.5,.1,1)';
 
-        /* 提供了短名方法,用于访问 console 方法 */
-        /*
-        log: console ? function(msg) {
-            lairen.dev && console.log( msg )
-        } : emptyFn,
-        dir: console ? function(obj) {
-            lairen.dev && console.dir( obj )
-        } : emptyFn,
-        error: console ? function(msg) {
-            lairen.dev && console.error( msg )
-        } : emptyFn
-        */
-    };
+    /* 提供了短名方法,用于访问 console 方法 */
+    /*
+    log: console ? function(msg) {
+        lairen.dev && console.log( msg )
+    } : emptyFn,
+    dir: console ? function(obj) {
+        lairen.dev && console.dir( obj )
+    } : emptyFn,
+    error: console ? function(msg) {
+        lairen.dev && console.error( msg )
+    } : emptyFn
+    */
 
     /**
      * The root of UIs
      * @type {DomElement}
      * @private
      */
-    $lr._viewport       = void 0;
+    _._viewport       = void 0;
 
     /* --------------------------------------------------------------------- */
 
     /* Extend */
     /* 可见 DOM 的根节点 */
-    $lr.ID_VIEWPORT      = 'lairen_viewport';
+    _.ID_VIEWPORT      = 'lairen_viewport';
     /* Dialog 元素 */
-    $lr.ID_DIALOG        = 'lairen_dialog';
-    $lr.ID_DIALOG_MASK   = 'dialog_mask';
+    _.ID_DIALOG        = 'lairen_dialog';
+    _.ID_DIALOG_MASK   = 'dialog_mask';
     /* FIXME(XCL): 由于布局未知原因导致动画不理想, 这里暂时不在嵌套 DOM */
-    $lr.ID_FRAGMENT_ROOT = 'lairen_fragments';
+    _.ID_FRAGMENT_ROOT = 'lairen_fragments';
 
     /* Layer manager */
     /* hasTopLayer */
 
-    $lr.DIALOG_WRAPPER  = 'dialog_wrapper';
+    _.DIALOG_WRAPPER  = 'dialog_wrapper';
     /* DIALOG_STACK  = 'dialog_stack', */
-    $lr.DIALOG_MASK     = 'dialog_mask';
-    $lr.DIALOG          = 'dialog';
-    $lr.FRAGMENT        = 'fragment';
-    $lr.FRAGMENTS       = 'fragment_root';
+    _.DIALOG_MASK     = 'dialog_mask';
+    _.DIALOG          = 'dialog';
+    _.FRAGMENT        = 'fragment';
+    _.FRAGMENTS       = 'fragment_root';
 
     /* --------------------------------------------------------------------- */
 
@@ -374,7 +373,7 @@
      * @returns {*}
      * @private
      */
-    $lr._alloZIndex = function(component) {
+    _._alloZIndex = function(component) {
         if ( ! component || ! zIndexes[ component ] )
             throw new TypeError( "Invalid component" );
 
@@ -401,59 +400,15 @@
      * @returns {string}
      * @private
      */
-    $lr._idSelector = function(id) {
+    _._idSelector = function(id) {
         return '#' + id
     };
 
-    $lr._isShowing = function(z_obj/*Zepto*/) {
+    _._isShowing = function(z_obj/*Zepto*/) {
         return z_obj && 'none' !== z_obj.css( 'display' )
     };
 
     /* --------------------------------------------------------------------- */
-
-    win.lairen = $lr;
-
-    var _loader = document.getElementsByTagName('head')[0];
-
-    var _import = function(res, delay) {
-        delay
-            ? setTimeout( function() {
-                    _loader.appendChild(res)
-                }, delay )
-            : _loader.appendChild(res);
-    };
-
-    /**
-     * 加载 Javascript 资源.
-     *
-     * @param src
-     * @param callback
-     * @param delay
-     */
-    win.import_script = function(src, callback, delay) {
-        /* TODO(XCL): callback 处理 */
-        if ( isNumber(callback) ) delay = callback;
-
-        var script = document.createElement('script');
-        script.src = src;
-
-        _import(script, delay);
-    };
-
-    /**
-     * 加载 Style 资源.
-     *
-     * @param href
-     * @param delay
-     */
-    win.import_style = function(href, delay) {
-        var style = document.createElement('link');
-        style.rel = 'stylesheet';
-        style.type = 'text/css';
-        style.href = href;
-
-        _import(style, delay);
-    };
 
     /**
      * 隐藏 Keyboard.
@@ -484,6 +439,7 @@
      */
     win.case_run = function(checker, callback, context) {
         var ctx = context || window;
+
         var watcher = function() {
             checker.call( ctx )
                 ? callback.call( ctx )
@@ -491,8 +447,104 @@
         };
 
         watcher();
-    }
-}();
+    };
+
+    /* --------------------------------------------------------------------- */
+
+    var _loader = doc.getElementsByTagName('head')[0];
+
+    var _import = function(res, delay) {
+        delay
+            ? setTimeout( function() {
+                    _loader.appendChild( res )
+                }, delay )
+            : _loader.appendChild( res );
+    };
+
+    /**
+     * 加载 Javascript 资源.
+     *
+     * @param src
+     * @param callback
+     * @param delay
+     */
+    win.import_script = function(src, callback, delay) {
+        /* TODO(XCL): callback 处理 */
+        if ( isNumber(callback) ) delay = callback;
+
+        var script;
+
+        /* 加载遇到错误 */
+        function error(event) {
+            event = event || win.event;
+
+            script.onload = script.onreadystatechange = script.onerror = null;
+        }
+
+        /* 加载完成 */
+        function process(event) {
+            event = event || win.event;
+
+            if ( event.type === 'load'
+                || ( /loaded|complete/.test( script.readyState )
+                    && ( ! doc.documentMode || doc.documentMode < 9 ) ) ) {
+                script.onload = script.onreadystatechange = script.onerror = null;
+
+                callback();
+            }
+        }
+
+        script          = doc.createElement('script');
+        script.type     = 'text/javascript';
+        script.src      = src;
+
+        script.onload   = script.onreadystatechange = process;
+        script.onerror  = error;
+
+        /* 以异步方式载入 */
+        script.async    = ! 0;
+
+        _import( script, delay );
+    };
+
+    /**
+     * 加载 Style 资源.
+     *
+     * @param href
+     * @param delay
+     */
+    win.import_style = function(href, delay) {
+        var style = doc.createElement('link');
+
+        style.rel   = 'stylesheet';
+        style.type  = 'text/css';
+        style.href  = href;
+
+        style.async = ! 0;
+
+        _import( style, delay );
+    };
+
+    /* --------------------------------------------------------------------- */
+
+    win.load = function(url, callback) {
+        if ( /\.css[^\.]*$/.test( url ) ) {
+            win.import_style( url );
+            return;
+        }
+        else {
+            callback = callback || _.noop;
+
+            win.import_script( url, callback );
+        }
+    };
+
+    /* --------------------------------------------------------------------- */
+
+    /* FIXME(XCL): 考虑 App 注入场景 */
+    /* 放置于 window 域 */
+    lairen || (win.lairen = _);
+}(window['lairen']);
 
 /**
  * ----------------------------------------------------------------------------
@@ -1529,8 +1581,13 @@
         if ( _hasFragmentTransInProcessing() )
             return;
 
-        if ( ! _exist( id ) )
+        if ( ! _exist( id ) ) {
+            if ( _config.lazyModeEnabled ) {
+                _setupPendingFragment( id, args, fromUri, animation );
+            }
+
             return;
+        }
 
         /*
         console.log( "_requestGo: id, args, fromUri, animation" );
@@ -1607,6 +1664,8 @@
      * 计算 string 的 hashcode.
      *
      * 参考: http://web.archive.org/web/20130703081745/http://www.cogs.susx.ac.uk/courses/dats/notes/html/node114.html
+     * @param str
+     * @returns {string}
      */
     function hashCode(str) {
         var hash = 0;
@@ -1812,6 +1871,9 @@
      * @private
      */
     var _config = {
+        /* 标识是否支持 lazy 加载模式 */
+        lazyModeEnabled:                   ! 1,
+
         /* 默认的 Home id */
         home:                               void 0,
 
@@ -1826,7 +1888,8 @@
      * @param {Map} newly
      */
     function config(newly) {
-        if ( ! newly )
+        _config = newly;
+        /*if ( ! newly )
             return;
 
         'home' in newly
@@ -1837,7 +1900,7 @@
         'onFragmentChangeAfter' in newly
             && (_config.onFragmentChangeAfter = newly.onFragmentChangeAfter);
         'onCurrentlyFragmentContentLoaded' in newly
-            && (_config.onCurrentlyFragmentContentLoaded = newly.onCurrentlyFragmentContentLoaded);
+            && (_config.onCurrentlyFragmentContentLoaded = newly.onCurrentlyFragmentContentLoaded);*/
     }
 
     /* 用于填补什么都不做的 callback/fn */
@@ -2684,6 +2747,32 @@
         return ! (_ID in frag);
     }
 
+    /* 指代将会在代码加载完成后呈现的 fragment */
+    var _pending_fragment_info;
+
+    function _setupPendingFragment( id, args, fromUri, animation ) {
+        _pending_fragment_info = {
+            id:         id,
+            args:       args,
+            fromUri:    fromUri,
+            animation:  animation
+        };
+
+        /* Loading the style first */
+        load( id + '.css' );
+        load( id + '.js' );
+    }
+
+    function _settlePendingFragmentIfNecessary(id) {
+        if ( ! _pending_fragment_info || id !== _pending_fragment_info.id )
+            return;
+
+        var pending             = _pending_fragment_info;
+        _pending_fragment_info  = void 0;
+
+        _requestGo( pending.id, pending.args, pending.fromUri, pending.animation );
+    }
+
     /**
      * 构建一个 fragment.
      *
@@ -2809,6 +2898,8 @@
         /* FIXME(XCL): 暂时从 bootstrap 调用, 以在 register 过程中调用一些未加载的
                        fragment */
         /*! hasFragmentPresented && _setupTopIfMatch( frag )*/
+
+        _settlePendingFragmentIfNecessary( id );
 
         return frag
     }

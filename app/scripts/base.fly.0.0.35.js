@@ -134,17 +134,17 @@
  *
  * @dependents Zepto
  */
-;!function(/*undefined*/) {
+;!function(lairen) {
     'use strict';
 
     /* FIXME(XCL): 考虑 App 注入场景 */
-    if ( window[ 'lairen' ] )
-        return;
+    /*if ( window[ 'lairen' ] )
+        return;*/
 
     /* 版本号 */
-    var VERSION = '0.0.33';
+    var VERSION = '0.0.35';
 
-    var $lr;
+    var _       = lairen || {};
 
     var win     = window;
 
@@ -155,10 +155,10 @@
         browser = {},
 
         /* 这取自于 zepto 以后可能完全使用 zepto.detect */
-        android = ua.match(/(Android);?[\s\/]+([\d.]+)?/),
-        ipad    = ua.match(/(iPad).*OS\s([\d_]+)/),
-        ipod    = ua.match(/(iPod)(.*OS\s([\d_]+))?/),
-        iphone  = ! ipad && ua.match(/(iPhone\sOS)\s([\d_]+)/),
+        android = ua.match(/(Android);?[\s\/]+([\d.]+)?/ig),
+        ipad    = ua.match(/(iPad).*OS\s([\d_]+)/ig),
+        ipod    = ua.match(/(iPod)(.*OS\s([\d_]+))?/ig),
+        iphone  = ! ipad && ua.match(/(iPhone\sOS)\s([\d_]+)/ig),
 
         /* 是否为微信环境 */
         wechat  = ua.match( /MicroMessenger\/([\d.]+)/ig ),
@@ -174,15 +174,15 @@
 
     if ( iphone && ! ipod ) {
         os.ios = os.iphone = ! 0;
-        os.version = iphone[2].replace(/_/g, '.');
+        iphone[2] && (os.version = iphone[2].replace(/_/g, '.'));
     }
     if ( ipad ) {
         os.ios = os.ipad = ! 0;
-        os.version = ipad[2].replace(/_/g, '.');
+        ipad[2] && (os.version = ipad[2].replace(/_/g, '.'));
     }
     if ( ipod ) {
         os.ios = os.ipod = ! 0;
-        os.version = ipod[3] ? ipod[3].replace(/_/g, '.') : null;
+        ipod[3] && (os.version = ipod[3] ? ipod[3].replace(/_/g, '.') : null);
     }
     'ios' in os || (os.ios = ! 1);
 
@@ -264,81 +264,82 @@
         }
     }
 
+    /* Super global */
+    var $global = {};
+
     /* 我们 lairen 开放的 fn 及 property */
-    $lr = {
-        undefined:      void 0,
-        emptyFn:        emptyFn,
-        win:            win,
+    _.undefined = void 0;
+    _.emptyFn   = emptyFn;
+    _.win       = win;
 
-        /* 是否为开发模式(待移除) */
-        dev:            0,
+    /* 是否为开发模式(待移除) */
+    _.dev       = 0;
 
-        /* 用于判断类型的函数 */
-        isUndefined:    isUndefined,
-        isString:       isString,
-        isArray:        isArray,
-        isFunction:     isFunction,
-        isNumber:       isNumber,
-        isDom:          isDom,
+    /* 用于判断类型的函数 */
+    _.isUndefined = isUndefined;
+    _.isString  =   isString;
+    _.isArray   =   isArray;
+    _.isFunction =  isFunction;
+    _.isNumber  =   isNumber;
+    _.isDom     =   isDom;
 
-        /* 低版本可能没有提供 JSON.stringify */
-        stringify:      stringify,
+    /* 低版本可能没有提供 JSON.stringify */
+    _.stringify =   stringify;
 
-        throwNiyError:  throwNiyError,
+    _.throwNiyError = throwNiyError;
 
-        /* HTTP 请求 */
-        get:            get,
-        post:           post,
+    /* HTTP 请求 */
+    _.get       =   get;
+    _.post      =   post;
 
-        /* Runtime Env */
-        os:             os,
-        browser:        browser,
+    /* Runtime Env */
+    _.os        =   os;
+    _.browser   =   browser;
 
-        /* Animation timing(Default) */
-        cubic_bezier:   'cubic-bezier(.4, 0, .2, 1)',
-        brisk_cubic_bezier:   'cubic-bezier(.1,.5,.1,1)'
+    /* Animation timing(Default) */
+    _.cubic_bezier          = 'cubic-bezier(.4, 0, .2, 1)';
+    _.brisk_cubic_bezier    = 'cubic-bezier(.1,.5,.1,1)';
 
-        /* 提供了短名方法,用于访问 console 方法 */
-        /*
-        log: console ? function(msg) {
-            lairen.dev && console.log( msg )
-        } : emptyFn,
-        dir: console ? function(obj) {
-            lairen.dev && console.dir( obj )
-        } : emptyFn,
-        error: console ? function(msg) {
-            lairen.dev && console.error( msg )
-        } : emptyFn
-        */
-    };
+    /* 提供了短名方法,用于访问 console 方法 */
+    /*
+    log: console ? function(msg) {
+        lairen.dev && console.log( msg )
+    } : emptyFn,
+    dir: console ? function(obj) {
+        lairen.dev && console.dir( obj )
+    } : emptyFn,
+    error: console ? function(msg) {
+        lairen.dev && console.error( msg )
+    } : emptyFn
+    */
 
     /**
      * The root of UIs
      * @type {DomElement}
      * @private
      */
-    $lr._viewport       = void 0;
+    _._viewport       = void 0;
 
     /* --------------------------------------------------------------------- */
 
     /* Extend */
     /* 可见 DOM 的根节点 */
-    $lr.ID_VIEWPORT      = 'lairen_viewport';
+    _.ID_VIEWPORT      = 'lairen_viewport';
     /* Dialog 元素 */
-    $lr.ID_DIALOG        = 'lairen_dialog';
-    $lr.ID_DIALOG_MASK   = 'dialog_mask';
+    _.ID_DIALOG        = 'lairen_dialog';
+    _.ID_DIALOG_MASK   = 'dialog_mask';
     /* FIXME(XCL): 由于布局未知原因导致动画不理想, 这里暂时不在嵌套 DOM */
-    $lr.ID_FRAGMENT_ROOT = 'lairen_fragments';
+    _.ID_FRAGMENT_ROOT = 'lairen_fragments';
 
     /* Layer manager */
     /* hasTopLayer */
 
-    $lr.DIALOG_WRAPPER  = 'dialog_wrapper';
+    _.DIALOG_WRAPPER  = 'dialog_wrapper';
     /* DIALOG_STACK  = 'dialog_stack', */
-    $lr.DIALOG_MASK     = 'dialog_mask';
-    $lr.DIALOG          = 'dialog';
-    $lr.FRAGMENT        = 'fragment';
-    $lr.FRAGMENTS       = 'fragment_root';
+    _.DIALOG_MASK     = 'dialog_mask';
+    _.DIALOG          = 'dialog';
+    _.FRAGMENT        = 'fragment';
+    _.FRAGMENTS       = 'fragment_root';
 
     /* --------------------------------------------------------------------- */
 
@@ -374,7 +375,7 @@
      * @returns {*}
      * @private
      */
-    $lr._alloZIndex = function(component) {
+    _._alloZIndex = function(component) {
         if ( ! component || ! zIndexes[ component ] )
             throw new TypeError( "Invalid component" );
 
@@ -401,17 +402,15 @@
      * @returns {string}
      * @private
      */
-    $lr._idSelector = function(id) {
+    _._idSelector = function(id) {
         return '#' + id
     };
 
-    $lr._isShowing = function(z_obj/*Zepto*/) {
+    _._isShowing = function(z_obj/*Zepto*/) {
         return z_obj && 'none' !== z_obj.css( 'display' )
     };
 
     /* --------------------------------------------------------------------- */
-
-    win.lairen = $lr;
 
     var _loader = document.getElementsByTagName('head')[0];
 
@@ -491,8 +490,13 @@
         };
 
         watcher();
-    }
-}();
+    };
+
+    /* --------------------------------------------------------------------- */
+
+    /* 放置于 window 域 */
+    lairen || (win.lairen = _);
+}(window['lairen']);
 
 /**
  * ----------------------------------------------------------------------------
