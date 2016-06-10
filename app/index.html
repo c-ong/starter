@@ -185,6 +185,10 @@
     $Fragment.config({
         lazyModeEnabled: true,
 
+        paths: {
+            'module**': 'other/'
+        },
+
         home: 'view.home',
         onFragmentChangeBefore: function() {
             /*console.dir( arguments );*/

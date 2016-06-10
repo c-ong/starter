@@ -108,6 +108,15 @@
  * 2: 对 $Fragment 进行全局配置, 例如指定: listener, property 等;
  *
  * $Fragment.config( {
+ *      // 标识是否启用 lazy 模式
+ *      lazyModeEnabled: true,
+ *
+ *      // 启用 lazy 模式后对要加载的代码进行路径规则, 目前仅支持简单的通配符 **, 以下例子将
+ *      // 可以匹配 module.a, module.a.b 等以 module 开头的 Fragment.
+ *      paths: {
+ *          'module**': 'other/'
+ *      },
+ *
  *      // 会在 fragment 切换之前调用, 其中 currently 指当前的 fragment,
  *      // upcoming 指即将呈现的 fragment.
  *      onFragmentChangeBefore: function(currently, upcoming) {},
@@ -527,7 +536,7 @@
 
     /* --------------------------------------------------------------------- */
 
-    win.load = function(url, callback) {
+    win.load_asset = function(url, callback) {
         if ( /\.css[^\.]*$/.test( url ) ) {
             win.import_style( url );
             return;
@@ -1871,7 +1880,13 @@
      * @private
      */
     var _config = {
-        /* 标识是否支持 lazy 加载模式 */
+        /**
+         * paths: {
+         *      'activity**': '/activity/'
+         * }
+         */
+
+        /* 标识是否支持 lazy 加载模式(默认不启用) */
         lazyModeEnabled:                   ! 1,
 
         /* 默认的 Home id */
@@ -1883,12 +1898,48 @@
     };
 
     /**
+     * 我们使用嵌套数组来存储 patterns 及对应的 bast_path, 用于对资源加载路径进行区分.
+     * @type {Array}
+     */
+    var _path_patterns;
+
+    function _resolve_configs() {
+        if ( ! _config ) return;
+
+        /* 如果启用 lazy mode 则对 paths 进行解析 */
+        if ( _config['lazyModeEnabled'] && _config['paths'] ) {
+            var paths = _config.paths;
+            var pattern;
+
+            _path_patterns = [];
+
+            /**
+             * Wildcards:
+             * activity**   =>  /^activity(w|d|.)+/g
+             */
+            Object.keys( paths ).forEach( function(key) {
+                pattern = key;
+
+                /* 将通配符转换为表达式(Wildcards => Expression) */
+                ( -1 ^ pattern.indexOf('**') )
+                    && ( pattern = pattern.replace('**', '(w|d|.)') );
+
+                _path_patterns.push( [
+                    new RegExp( '^' + pattern + '+' ),
+                    paths[ key ]
+                ] );
+            } );
+        }
+    }
+
+    /**
      * 为 $Fragment 配置全局的 listener 及属性.
      *
      * @param {Map} newly
      */
     function config(newly) {
         _config = newly;
+
         /*if ( ! newly )
             return;
 
@@ -1901,10 +1952,12 @@
             && (_config.onFragmentChangeAfter = newly.onFragmentChangeAfter);
         'onCurrentlyFragmentContentLoaded' in newly
             && (_config.onCurrentlyFragmentContentLoaded = newly.onCurrentlyFragmentContentLoaded);*/
+
+        _resolve_configs();
     }
 
     /* 用于填补什么都不做的 callback/fn */
-    var noop = $lr.emptyFn;
+    var noop = $lr.noop;
 
     /**
      * fragment 切换之前.
@@ -2758,9 +2811,23 @@
             animation:  animation
         };
 
+        /* 查找路径前缀 */
+        var base_path = _findBasePathIfNeeded( id );
+
         /* Loading the style first */
-        load( id + '.css' );
-        load( id + '.js' );
+        load_asset( base_path + id + '.css' );
+        load_asset( base_path + id + '.js' );
+    }
+
+    function _findBasePathIfNeeded(id) {
+        for ( var idx in _path_patterns ) {
+            if ( _path_patterns[ idx ][ 0 ].test( id ) ) {
+                return _path_patterns[ idx ][ 1 ];
+            }
+        }
+
+        /* 没有任何有效的 path 规划 */
+        return ''
     }
 
     function _settlePendingFragmentIfNecessary(id) {
@@ -3817,9 +3884,9 @@
      *
      * @type {function}
      */
-    win.go          = win.$Fragment.go,
+    win.go          = win.$Fragment.go;
     /* 以没有切换效果的模式前往下一个 fragment */
-    win.goFast      = win.$Fragment.goFast,
+    win.goFast      = win.$Fragment.goFast;
     /* 后退操作 */
     win.back        = win.$Fragment.back;
 
