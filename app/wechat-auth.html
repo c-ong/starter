@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>We Chat Auth</title>
+    <script type="text/javascript" charset="utf-8"
+            src="libs/zepto/zepto.js?1.1.6"></script>
+    <script type="text/javascript" charset="utf-8"
+            src="libs/zepto/fx.js?1.1.6"></script>
+
+
+    <link rel="stylesheet" href="styles/base.css">
+    <style>
+        * {
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div style="text-align: center">
+    <strong>注意: 该功能仅适用于 H5V4.</strong>
+    <hr/>
+    <input type="checkbox" id="use_for_sign" /><label for="use_for_sign">用于登录/注册</label>
+    <br/>
+    <label for="refer_url">未绑定场景跳转的 URL</label>
+    <br/>
+    <input type="text" id="refer_url" style="width: 84%; padding: 1rem;" placeholder="" />
+    <br/>
+    <label for="signed_url">登录成功后跳转的 URL(已绑定的情况)</label>
+    <br/>
+    <input type="text" id="signed_url" style="width: 84%; padding: 1rem;" placeholder="" />
+    <button id="action" style="width: 84%; padding: 16px; margin-bottom: 16px; margin-top: 16px">Generating now</button>
+
+    <hr />
+    <textarea id="output" style="width: 84%; padding: 1rem;" rows="40" placeholder="生成的 URL" readonly></textarea>
+</div>
+
+<script defer>
+    var $signed_url             = $( '#signed_url' );
+    var $refer_url              = $( '#refer_url' );
+
+    var $output                 = $( '#output' );
+
+    var $use_for_sign_checkbox  = $( '#use_for_sign' );
+    var $action                 = $( '#action' );
+
+    /* 生成用于微信授权的 URL */
+    function generate_we_chat_auth_url(args) {
+        var return_needed = !! args['return_needed'];
+
+        /* 该 URL 用于如果帐户已经绑定过则登录成功后进行跳转 */
+        var signed_url  = encodeURIComponent( args['signed_url'] || '' );
+        var refer_url   = args['refer_url'] || '';
+
+        /* 是否有 Fragment 标识 */
+        var is_refer_with_frag = -1 ^ refer_url.indexOf('#!');
+
+        /* 该 URL 用于成功获取 Open ID 后跳转的界面, 这个 URL 添加了一个 return 参数用
+         * 于登录成功后前往指定的界面。
+         */
+        var refer       = refer_url;
+
+        /* 如果需要, 这里的 return 进行了两次 encode 操作 */
+        if ( is_refer_with_frag ) {
+            /* args 分隔符位置 */
+            var begin_pos_of_args = refer.indexOf( ':', refer.indexOf('#!') );
+
+            -1 ^ begin_pos_of_args || ( begin_pos_of_args = 0 );
+
+            if ( return_needed ) {
+                refer += (begin_pos_of_args ? '&' : ':') + 'return=' + signed_url;
+            } else {
+                if ( -1 ^ refer.indexOf('return=', begin_pos_of_args) ) {
+
+                } else {
+                    /* FIXME(XCL): 由于后端实现问题 return= 需要作处理 */
+                    refer += ( begin_pos_of_args ? '&return=' : ':return=' );
+                }
+            }
+        }
+
+        /* 重定向至微信授权的 URL */
+        return 'http://lairen.com/m/wxAuth?from=v4&refer='
+                + encodeURIComponent( encodeURIComponent( refer ) )
+                + ( return_needed || signed_url
+                        ? '&signed_url=' + encodeURIComponent( signed_url )
+                        : '' );
+    }
+
+    /* 重新生成 */
+    function trigger_regenerate() {
+        action.click();
+    }
+
+    /* 根据'用于登录操作' checked 状态变化来触发重新生成 URL */
+    $use_for_sign_checkbox.on( 'change', function() {
+        var checked = $use_for_sign_checkbox.prop('checked');
+
+        if ( checked ) {
+            $refer_url.data( 'real-val', $refer_url.val() );
+            $refer_url.val( 'http://v4.lairen.com/#!login' );
+        } else {
+            $refer_url.val( $refer_url.data( 'real-val' ) );
+        }
+
+        /* 用于登录的 URL refer 是固定的 */
+        $refer_url.prop( 'readonly', checked );
+
+        trigger_regenerate();
+    } );
+
+    /* 生成按钮 */
+    action.onclick = function() {
+        if ( ! ( $signed_url.val() && $refer_url.val() ) ) {
+            return;
+        }
+
+        var args = {
+            /* 是否返回 */
+            return_needed:  $use_for_sign_checkbox.prop('checked'),
+
+            signed_url:     $signed_url.val(),
+            refer_url:      $refer_url.val()
+        };
+
+        /* 输出转换结果 */
+        $output.val( generate_we_chat_auth_url( args ) );
+
+//        var rows = input.value.split( '\n' );
+//        var buffer = [];
+//
+//        for ( var idx in rows ) {
+//            if ( rows[idx] ) {
+//                buffer.push( "'" + rows[idx].trim() + "'" + (idx < rows.length ? ' +' : '') );
+//            }
+//        }
+//
+//        /* 如果量后一行为空则移除 + */
+//        if ( ! rows[ rows - 1 ] ) {
+//            var last_line = buffer[ buffer.length - 1 ];
+//            var truncate = last_line.substring( 0, last_line.length - 1 );
+//            buffer[ buffer.length - 1 ] = truncate;
+//        }
+//
+//        output.value = buffer.join( '\n' );
+    };
+</script>
+</body>
+</html>

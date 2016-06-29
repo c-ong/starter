@@ -271,37 +271,37 @@
     }
 
     /* Super global */
-    var $global = {};
+    var $global     = {};
 
     /* 我们 lairen 开放的 fn 及 property */
-    _.undefined = void 0;
-    _.emptyFn   = emptyFn;
-    _.noop      = emptyFn;
-    _.win       = win;
+    _.undefined     = void 0;
+    _.emptyFn       = emptyFn;
+    _.noop          = emptyFn;
+    _.win           = win;
 
     /* 是否为开发模式(待移除) */
-    _.dev       = 0;
+    _.dev           = 0;
 
     /* 用于判断类型的函数 */
-    _.isUndefined = isUndefined;
-    _.isString  =   isString;
-    _.isArray   =   isArray;
-    _.isFunction =  isFunction;
-    _.isNumber  =   isNumber;
-    _.isDom     =   isDom;
+    _.isUndefined   = isUndefined;
+    _.isString      = isString;
+    _.isArray       = isArray;
+    _.isFunction    = isFunction;
+    _.isNumber      = isNumber;
+    _.isDom         = isDom;
 
     /* 低版本可能没有提供 JSON.stringify */
-    _.stringify =   stringify;
+    _.stringify     = stringify;
 
     _.throwNiyError = throwNiyError;
 
     /* HTTP 请求 */
-    _.get       =   get;
-    _.post      =   post;
+    _.get           = get;
+    _.post          = post;
 
     /* Runtime Env */
-    _.os        =   os;
-    _.browser   =   browser;
+    _.os            = os;
+    _.browser       = browser;
 
     /* Animation timing(Default) */
     _.cubic_bezier          = 'cubic-bezier(.4, 0, .2, 1)';
@@ -539,7 +539,6 @@
     win.load_asset = function(url, callback) {
         if ( /\.css[^\.]*$/.test( url ) ) {
             win.import_style( url );
-            return;
         }
         else {
             callback = callback || _.noop;
@@ -2819,6 +2818,13 @@
         load_asset( base_path + id + '.js' );
     }
 
+    /**
+     * 查找指定 Fragment 用来加载资源的路径.
+     *
+     * @param id
+     * @returns {string} 路径前缀
+     * @private
+     */
     function _findBasePathIfNeeded(id) {
         for ( var idx in _path_patterns ) {
             if ( _path_patterns[ idx ][ 0 ].test( id ) ) {
@@ -2995,7 +3001,8 @@
 
                 var trigger = {
                     target: frag[ _ID ],
-                    action: action };
+                    action: action
+                };
 
                 /* 不设置 once 默认指只触发一次 */
                 'once' in triggerDirective
