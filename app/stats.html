@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://www.google.com/xjs/_/js/sdch=d/k=xjs.s.en.CoEBH16lZdg.O/m=sx,c,sb,cdos,cr,elog,hsm,jsa,r,qsm,j,p,d,csi/am=BARKHi9YAPH3EBC3SBakBgwGBQ/rt=j/d=1/t=zcms/rs=ACT90oGKQjaEo3jMSpiUjX5Ftjou1kd_Gg"></script>
+    <script>
+        /* 卡车之家大数据中心统计 */
+        var stats = 'https://stats.360che.com/';
+        var referrer = document.referrer || 'wulaiyuan';    // 来源
+        var current = location.href;
+
+        function debug(track) {
+           // alert( track );
+        }
+
+        // PV统计
+        function Truckhome_pv(options){
+            var sites = {
+                "product":2,
+                "dealer":3,
+                "m":4,
+                "guache":5,
+                "bbs":6,
+                "mai":7,
+                "tao":8,
+                "vip":9
+            };
+            // 屏幕分辨率
+            var sw = screen.width,sc = screen.height;
+            var hostname = location.hostname.match(/[^.$]+/);
+
+            // 站点
+            var site = sites[hostname] || 1,s = '';
+
+            if(options){
+                for(var key in options){
+                    s += ('&' + key + '=' + options[key]);
+                };
+            }
+
+            var img = new Image();
+            img.src = stats + 'tj.gif?sw='+ sw + '&sc=' + sc + '&referrer=' + referrer + '&page=' + current + '&site=' + site + s + '&ts=' + (+new Date());
+
+            debug( img.src );
+
+        };
+
+        // 停留时长
+        function Truckhome_duration(){
+            var start,end,uuid = document.cookie.match(/udstatistics=([^;$]+)/),r = '';
+            window.addEventListener('load',function(e){
+                start = +new Date();
+            });
+            if(uuid && uuid[1]){
+                r = escape(encodeURIComponent(uuid[1] + ((+new Date()) + '').substr(0,8)));
+            }
+
+            window.addEventListener('beforeunload',function(e){
+                end = +new Date();
+                var img = new Image();
+                img.src = stats + 'tlsc.gif?r=' + r + '&s=' + start + '&e=' + end + '&referer=' + referrer;
+
+                console.log( 'beforeunload: ' + img.src );
+
+                e = e || window.event;
+
+                if (e) {
+                    e.returnValue = ' ';
+                }
+
+                //return ' ';
+            });
+        }
+
+        /*
+         task:所属业务线
+         */
+        // 点击统计,提交，变更等类别统计
+        function Truckhome_events(options){
+            var s = '',img = new Image(),ts = +new Date();
+            if(options){
+                for(var key in options){
+                    s += ('&' + key + '=' + options[key]);
+                };
+            }
+            img.src = stats + 'events.gif?page=' + current + s + '&ts=' + ts;
+
+            debug( img.src );
+
+        };
+
+
+        // 微信分享统计
+        function Truckhome_shares(options){
+            var s = '',img = new Image(),ts = +new Date();
+            if(options){
+                for(var key in options){
+                    s += ('&' + key + '=' + options[key]);
+                };
+            }
+
+            img.src = stats + 'shares.gif?page=' + current + s + '&ts=' + ts;
+
+            debug( img.src );
+        }
+
+        window.onload = function() {
+            // 方法调用
+            Truckhome_pv({
+                "dl":1221,  // 大类id
+                "ct":333,   // 子类id
+                "sr":34,    // 车系id
+                "br":543,   // 品牌id
+                "p":23      // 产品id
+            });
+
+            Truckhome_duration();
+        };
+    </script>
+</head>
+<body>
+<img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png" />
+<a href="//baidu.com">点我测试 Duration</a>
+
+<script>
+alert( '你看到我因为资源加载结束了, 但并不意味这加载成功！' );
+</script>
+</body>
+</html>

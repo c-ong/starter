@@ -1,0 +1,352 @@
+/* Used for the first fragment */
+* {
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 20px;
+    font-family: sans-serif !important;
+    /*font-size: 62.5% !important;*/
+    -webkit-text-size-adjust: 100%;
+}
+@media only screen and (min-width: 400px) {
+    html {
+        font-size: 21.33333333px !important;
+    }
+}
+@media only screen and (min-width: 414px) {
+    html {
+        font-size: 22.08px !important;
+    }
+}
+@media only screen and (min-width: 480px) {
+    html {
+        font-size: 25.6px !important;
+    }
+}
+
+body {
+    position: absolute;
+    margin: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    line-height: 1.5rem;
+    color: #3d4145;
+    overflow: hidden;
+    /*background: url('../imgs/check.webp');*/
+}
+
+.fragment-scroller {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.fragment-scroller .scroller-inner {
+    box-sizing: border-box;
+    border-top: 1px solid transparent;
+    margin-top: -1px;
+    padding-bottom: 0.5rem;
+}
+
+/*------------------------------------------------*/
+
+.x-ui #dialog_mask, .x-ui .lairen-layout--fragment {
+    /* 考虑在 X5 上关掉 transform http://x5.tencent.com/doc?id=1002#_1.1 */
+    /*http://stackoverflow.com/questions/12643240/improving-css3-transition-performance*/
+    /*will-change: transform;*/
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+
+    /*will-change: transform;*/
+    /*-webkit-transform: translateZ(0);*/
+    /*transform: translateZ(0);*/
+
+    /*-webkit-backface-visibility: hidden;*/
+    /*backface-visibility: hidden;*/
+
+    /*-webkit-perspective: 1000px;*/
+    /*perspective: 1000px;*/
+}
+
+.lairen-layout--fragment {
+    overflow: hidden;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+
+    right: 0;
+    bottom: 0;
+
+    display: none;
+    background-color: #f2f2f2;
+}
+
+#lairen_dialog {
+    display: none;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba( 0, 0, 0, 0.2 );
+}
+
+#dialog_mask {
+    /*position: fixed;*/
+    display: none;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    /*background-color: rgba(255, 255, 255, .6);*/
+    background-color: rgba(0, 0, 0, .4);
+}
+
+/*------------------------------------------------------*/
+/* 部分 Android 动画不流畅,固此我们使用 translateX 而不是 translate3d */
+
+/* Fragment Slide 动作定义 */
+@-webkit-keyframes fragment-slide-enter {
+    from {
+        -webkit-transform: translateX(100%);
+        transform: translateX(100%);
+    }
+    to {
+        -webkit-transform: translateX(0);
+        transform: translateX(0);
+    }
+}@keyframes fragment-slide-enter {
+    from {
+        -webkit-transform: translateX(100%);
+        transform: translateX(100%);
+    }
+    to {
+        -webkit-transform: translateX(0);
+        transform: translateX(0);
+    }
+}
+@-webkit-keyframes fragment-slide-pop-exit {
+    from {
+        -webkit-transform: translateX(0);
+        transform: translateX(0);
+    }
+    to {
+        -webkit-transform: translateX(-20%);
+        transform: translateX(-20%);
+    }
+}@keyframes fragment-slide-pop-exit {
+    from {
+        -webkit-transform: translateX(0);
+        transform: translateX(0);
+    }
+    to {
+        -webkit-transform: translateX(-20%);
+        transform: translateX(-20%);
+    }
+}
+@-webkit-keyframes fragment-slide-pop-enter {
+    from {
+        -webkit-transform: translateX(-20%);
+        transform: translateX(-20%);
+    }
+    to {
+        -webkit-transform: translateX(0);
+        transform: translateX(0);
+    }
+}@keyframes fragment-slide-pop-enter {
+    from {
+        -webkit-transform: translateX(-20%);
+        transform: translateX(-20%);
+    }
+    to {
+        -webkit-transform: translateX(0);
+        transform: translateX(0);
+    }
+}
+@-webkit-keyframes fragment-slide-exit {
+    from {
+        -webkit-transform: translateX(0);
+        transform: translateX(0);
+    }
+    to {
+        -webkit-transform: translateX(100%);
+        transform: translateX(100%);
+    }
+}@keyframes fragment-slide-exit {
+    from {
+        -webkit-transform: translateX(0);
+        transform: translateX(0);
+    }
+    to {
+        -webkit-transform: translateX(100%);
+        transform: translateX(100%);
+    }
+}
+
+/* Fragment Cover 动作定义 */
+@-webkit-keyframes fragment-cover-enter {
+    from {
+        -webkit-transform: translateY(80%);
+        transform: translateY(80%);
+    }
+    to {
+        -webkit-transform: translateY(0);
+        transform: translateY(0);
+    }
+}@keyframes fragment-cover-enter {
+    from {
+        -webkit-transform: translateY(80%);
+        transform: translateY(80%);
+    }
+    to {
+        -webkit-transform: translateY(0);
+        transform: translateY(0);
+    }
+}
+
+@-webkit-keyframes fragment-cover-pop-exit {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: .8;
+    }
+}@keyframes fragment-cover-pop-exit {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: .8;
+    }
+}
+
+@-webkit-keyframes fragment-cover-pop-enter {
+    from {
+        opacity: .8;
+    }
+    to {
+        opacity: 1;
+    }
+}@keyframes fragment-cover-pop-enter {
+    from {
+        opacity: .8;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@-webkit-keyframes fragment-cover-exit {
+    from {
+        -webkit-transform: translateY(0);
+        transform: translateY(0);
+        /*opacity: 1;*/
+    }
+    to {
+        -webkit-transform: translateY(100%);
+        transform: translateY(100%);
+        /*opacity: 0;*/
+    }
+}@keyframes fragment-cover-exit {
+    from {
+        -webkit-transform: translateY(0);
+        transform: translateY(0);
+        /*opacity: 1;*/
+    }
+    to {
+        -webkit-transform: translateY(100%);
+        transform: translateY(100%);
+        /*opacity: 0;*/
+    }
+}
+
+/* Fragment Fade 效果定义 */
+@-webkit-keyframes fragment-fade-enter {
+    from {
+        opacity: .5;
+    }
+    to {
+        opacity: 1;
+    }
+}@keyframes fragment-fade-enter {
+    from {
+        opacity: .5;
+    }
+    to {
+        opacity: 1;
+    }
+}
+/*@keyframes fragment-fade-pop-exit {*/
+    /*none*/
+/*}*/
+@-webkit-keyframes fragment-fade-pop-enter {
+    from {
+        opacity: .5;
+    }
+    to {
+        opacity: 1;
+    }
+}@keyframes fragment-fade-pop-enter {
+    from {
+        opacity: .5;
+    }
+    to {
+        opacity: 1;
+    }
+}
+/*@keyframes fragment-fade-exit {*/
+    /*none*/
+/*}*/
+
+/*------------------------------------------------------*/
+/* Dialog mask fade-in-out 效果定义 */
+@-webkit-keyframes dialog-mask-in {
+    from {
+        background-color: rgba(0, 0, 0, .0)
+    }
+    to {
+        background-color: rgba(0, 0, 0, .4)
+    }
+}
+@-webkit-keyframes dialog-mask-out {
+    from {
+        background-color: rgba(0, 0, 0, .4)
+    }
+    to {
+        background-color: rgba(0, 0, 0, .0)
+    }
+}
+/*------------------------------------------------------*/
+
+/* Unused */
+#dialog_stack {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+}
+
+.dialog-wrapper {
+    display: none;
+
+    position: relative;
+    background-color: white;
+    /*top: 50%;*/
+    margin-left: auto;
+    margin-right: auto;
+    min-width: 86%;
+    min-height: 34%;
+    max-width: 86%;
+    max-height: 34%;
+    /*margin-top: -45%;*/
+    border-radius: 2px;
+    box-shadow: 0 15px 25px 0 rgba(0, 0, 0, 0.2);
+}

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Untitled</title>
+    <script type="text/javascript" charset="utf-8"
+            src="libs/zepto/1.2.0/zepto.js?1.1.6"></script>
+    <script type="text/javascript" charset="utf-8"
+            src="libs/zepto/1.2.0/fx.js?1.1.6"></script>
+
+    <script type="text/javascript" charset="utf-8"
+            src="libs/mdl/material.js?1.0.5"></script>
+    <link rel="stylesheet" href="libs/mdl/material.css?1.0.5">
+
+    <link rel="stylesheet" href="styles/base.css">
+
+    <style>
+        body {
+            background: #f2f2f2;
+            padding: 20px;
+        }
+        .flex {
+            position: relative;
+            width: 414px;
+            min-height: 736px;
+            /*border: 1px solid black;*/
+        }
+
+        .flex__tile {
+            position: absolute;
+            /*border: 1px dashed red;*/
+            background: white;
+            box-shadow: 1px 1px 8px rgba(0,0,0,.3)
+        }
+
+        .flex__tile--hover {
+            /*opacity: .8;*/
+            box-shadow: 1px 1px 38px rgba(0,0,0,.2)
+        }
+
+        .menu {
+            float: right;
+        }
+
+        .context-menu button {
+            background: #2979FF;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 2px;
+            font-size: 20px;
+        }
+
+    </style>
+
+    <script type="text/javascript">
+
+        function FlexComponent(configs) {
+            'use strict';
+
+            var self = this;
+
+            var BOUNDS_LEFT     = 0,
+                BOUNDS_TOP      = 1,
+                BOUNDS_RIGHT    = 2,
+                BOUNDS_BOTTOM   = 3;
+
+            var LEFT            = BOUNDS_LEFT,
+                TOP             = BOUNDS_TOP,
+                RIGHT           = BOUNDS_RIGHT,
+                BOTTOM          = BOUNDS_BOTTOM;
+
+            function allo_matrix( rows, cols, default_value) {
+                var arr = [];
+
+                // Creates all lines
+                for ( var i = 0; i < rows; i++ ) {
+                    // Creates an empty line
+                    arr.push( [] );
+
+                    // Adds cols to the empty line:
+                    arr[ i ].push( new Array( cols ) );
+
+                    for ( var j = 0; j < cols; j++ ) {
+                        // Initializes
+                        arr[ i ][ j ] = default_value;
+                    }
+                }
+
+                return arr;
+            }
+
+            /* 栏目容器 */
+            var container   = $( configs.container );
+            var matrix      = allo_matrix( configs.rows, configs.cols, 0 );
+
+            var tiles = [];
+
+            var hori_min, hori_max,
+                vert_min, vert_max;
+
+            function calculate_free_space() {
+                var capacity = configs.rows * configs.cols;
+
+                if ( ! tiles.length )
+                    return capacity;
+
+                var tile;
+
+                for ( var idx in tiles ) {
+                    tile        = tiles[ idx ];
+
+                    capacity = capacity - ( (tile[ BOUNDS_RIGHT ] - tile[ BOUNDS_LEFT ])
+                            * (tile[ BOUNDS_BOTTOM ] - tile[ BOUNDS_TOP ]) );
+                }
+
+                return capacity;
+            }
+
+            /* 光标 enter 时, 触发更新 context menu */
+            container.on( 'mouseenter', '.flex__tile', function() {
+                var target = $( this );
+
+                target.toggleClass( 'flex__tile--hover' );
+
+                self.lookupAdjustment( target.index() );
+            } ).on( 'mouseleave', '.flex__tile', function() {
+                $( this ).toggleClass( 'flex__tile--hover' );
+            } );
+
+            function alloc_tile_bounds() {
+                if ( ! calculate_free_space() ) {
+                    alert( '栏目已经填满了' );
+                    return null;
+                }
+
+                //console.dir( matrix );
+
+                /*for ( var top = 0; top < matrix.length; top++ ) {
+                    for (var left = 0; left < matrix[ top ].length; left++) {
+                        console.log( "left: %s, top: %s", left, top );
+                    }
+                }*/
+
+                for ( var top = 0; top < matrix.length; top++ ) {
+                    for ( var left = 0; left < matrix[ top ].length; left++ ) {
+                        //console.log( "[ %s, %s ] %s", left, top, matrix[ left ][ top ] );
+
+                        if ( ! matrix[ top ][ left ] ) {
+                            /*var cell_hori_span = configs.specs[ 0 ][ 0 ],
+                                cell_vert_span = configs.specs[ 0 ][ 1 ];*/
+
+                            matrix[ top ][ left ] = !! 1;
+
+                            return [
+                                left,
+                                top,
+                                left + 1,
+                                top + 1
+                            ];
+                        }
+                    }
+                }
+            }
+
+            /**
+             * 更新 Tile 对应的 DOM.
+             */
+            function update_tile_dom($new_one, bounds) {
+                var cell_width = container.width() / configs.rows,
+                    cell_height = container.height() / configs.cols;
+
+                $new_one.css( {
+                    left:   cell_width * bounds[ BOUNDS_LEFT ],
+                    top:    cell_height * bounds[ BOUNDS_TOP ],
+
+                    width:  cell_width * ( bounds[ BOUNDS_RIGHT ] - bounds[ BOUNDS_LEFT ] ),
+                    height: cell_height * ( bounds[ BOUNDS_BOTTOM ] - bounds[ BOUNDS_TOP ] )
+                } );
+            }
+
+            /* 判定指定边界内的元素是否被占用 */
+            function is_bounds_free(bounds) {
+                var left    = bounds[ BOUNDS_LEFT ],
+                    top     = bounds[ BOUNDS_TOP ],
+                    right   = bounds[ BOUNDS_RIGHT ],
+                    bottom  = bounds[ BOUNDS_BOTTOM ];
+
+                var width   = right - left,
+                    height  = bottom - top;
+
+                console.log( bounds );
+
+                for ( var x = 0; x < matrix.length; x++ ) {
+                    for ( var y = 0; y < matrix[ x ].length; y++ ) {
+                        console.log( "[ %s, %s ] = %s", x, y, matrix[ x ][ y ] );
+                    }
+                }
+
+                // [ 1, 1, 2, 2 ]
+                for ( var x = left; x < right; x++ ) {
+                    console.log( "X-axis x: %s, y: %s", x, top );
+                    if ( is_element_free( x, top ) )
+                        return false
+                }
+                for ( var y = top; y < bottom; y++ ) {
+                    console.log( "Y-axis x: %s, y: %s", left, y );
+                    if ( is_element_free( left, y ) )
+                        return false
+                }
+
+                return true;
+            }
+
+            function is_element_free(x, y) {
+                return matrix[ x ] && matrix[ x ][ y ];
+            }
+
+            /**
+             * 申请创建一个 Tile, 创建成功则返回非负数, 反则返回 -1.
+             *
+             * @returns {number}
+             */
+            this.createTile = function() {
+                var bounds = alloc_tile_bounds();
+
+                /* 空间用光了 */
+                if ( null == bounds )
+                    return -1;
+
+                var new_one = $( '<div class="flex__tile"></div>' );
+
+                update_tile_dom( new_one, bounds );
+
+                container.append( new_one );
+
+                return tiles.push( bounds );
+            };
+
+            /**
+             * 是否还有未开辟的空间.
+             *
+             * @returns {boolean}
+             */
+            this.hasFreeSpace = function() {
+                return false;
+            };
+
+            /**
+             * 导出 Tile 数据.
+             */
+            this.export = function() {
+
+            };
+
+            /**
+             * 查找可调整的操作.
+             */
+            this.lookupAdjustment = function(index) {
+                if ( ! ( index in tiles ) )
+                    return null;
+
+//                console.log( index in tiles && JSON.stringify( tiles[ index ] ) );
+
+                var tile    = tiles[ index ];
+
+                var width   = tile[ BOUNDS_RIGHT ] - tile[ BOUNDS_LEFT ],
+                    height  = tile[ BOUNDS_BOTTOM ] - tile[ BOUNDS_TOP ];
+
+                var spec;
+
+                var diff_width,
+                    diff_height;
+
+                /* 正数代表扩展, 反则为缩小 */
+                var move_left, move_top, move_right, move_bottom;
+
+                /* 按着从小到大的顺序查找 */
+                for ( var idx in configs.specs ) {
+                    spec = configs.specs[ idx ];
+
+                    console.log( "spec: %s, w: %s, h: %s, tile: %o", JSON.stringify( spec ), width, height, tile );
+
+                    /* TODO(XCL): 暂未处理缩小的场景 */
+                    if ( (diff_width = width != spec[ 0 ])
+                            || (diff_height = height != spec[ 1 ]) ) {
+                        if ( diff_width ) {
+                            /* 右扩 */
+//                            if ( /*width*/tile[ BOUNDS_RIGHT ] < configs.cols ) {
+                                console.log( "X-axis %s, %s", tile[ BOUNDS_RIGHT ], configs.cols );
+                                build_bounds_for_lookup( tile, !! 1, RIGHT, spec[ 0 ] - width );
+//                            }
+                        }
+                        else if ( diff_height ) {
+                            /* 下扩 */
+//                            if ( /*height*/tile[ BOUNDS_BOTTOM ] < configs.rows ) {
+                                console.log( "Y-axis %s, %s", tile[ BOUNDS_BOTTOM ], configs.rows );
+
+                                build_bounds_for_lookup( tile, !! 1, BOTTOM, spec[ 1 ] - height );
+//                            }
+                        }
+                    }
+                }
+            };
+
+            /**
+             *
+             * @param base 基于该 bounds 构建
+             * @param grow 是否为扩充
+             * @param direction x - +, y + -,
+             * @param offset 扩充或缩小的范围
+             */
+            function build_bounds_for_lookup(base, grow, direction, offset) {
+                var bounds = [
+                    base[ BOUNDS_LEFT ],
+                    base[ BOUNDS_TOP ],
+                    base[ BOUNDS_RIGHT ],
+                    base[ BOUNDS_BOTTOM ]
+                ];
+
+                switch ( direction ) {
+                    case LEFT:
+                    case RIGHT:
+                        bounds[ BOUNDS_LEFT ] += (grow
+                                ? offset
+                                : ~offset + 1);
+                        bounds[ BOUNDS_RIGHT ] += (grow
+                                ? offset
+                                : ~offset + 1);
+                        break;
+                    case TOP:
+                    case BOTTOM:
+                        bounds[ BOUNDS_TOP ]    += (grow
+                                ? offset
+                                : ~offset + 1);
+                        bounds[ BOUNDS_BOTTOM ] += (grow
+                                ? offset
+                                : ~offset + 1);
+                        break;
+                }
+
+                console.log( "%s, %s, %s",
+                        JSON.stringify( arguments ),
+                        JSON.stringify( bounds ),
+                        is_bounds_free( bounds )
+                );
+
+                return bounds;
+            }
+        }
+
+        $( function() {
+            /* 测试 A 类的栏目 */
+            var flex = new FlexComponent( {
+                container: '.flex',
+
+                /* 多少行, 列(Matrix) */
+                rows: 2,
+                cols: 3,
+
+                /* 允许的规格 */
+                specs: [
+                    [ 1, 1],
+                    [ 1, 2]
+                ]
+            } );
+
+            $('#button_add_tile').on( 'click', function() {
+                flex.createTile();
+            } );
+        } );
+    </script>
+</head>
+<body>
+<div class="menu context-menu">
+    <button id="button_add_tile">添加 Tile</button>
+</div>
+
+<div>
+<h4>A 类容器</h4>
+<div class="flex"></div>
+</div>
+</body>
+</html>
