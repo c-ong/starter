@@ -82,7 +82,7 @@
         }
 
         /* 重定向至微信授权的 URL */
-        return 'http://lairen.com/m/wxAuth?from=v4&refer='
+        return 'http://server.com/m/wxAuth?from=v4&refer='
                 + encodeURIComponent( encodeURIComponent( refer ) )
                 + ( return_needed || signed_url
                         ? '&signed_url=' + encodeURIComponent( signed_url )
@@ -100,7 +100,7 @@
 
         if ( checked ) {
             $refer_url.data( 'real-val', $refer_url.val() );
-            $refer_url.val( 'http://v4.lairen.com/#!login' );
+            $refer_url.val( 'http://server.com/#!login' );
         } else {
             $refer_url.val( $refer_url.data( 'real-val' ) );
         }
